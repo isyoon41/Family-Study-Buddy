@@ -1,5 +1,6 @@
 import type { OcrResult } from '../types';
 
+// VITE_ 접두사 키: 로컬 개발 전용 (번들에 포함되지만 로컬 테스트용)
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 const MODEL = 'gemini-2.5-flash';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -34,7 +35,7 @@ export function hasPageInfo(items: { quantity_raw: string }[]): boolean {
   return items.some(item => pagePattern.test(item.quantity_raw));
 }
 
-/** base64 → Gemini API 호출 */
+/** [로컬 개발 전용] base64 → Gemini API 직접 호출 */
 async function callGemini(base64: string, mimeType: string): Promise<OcrResult> {
   const body = {
     contents: [
@@ -80,6 +81,22 @@ async function callGemini(base64: string, mimeType: string): Promise<OcrResult> 
   return JSON.parse(jsonMatch[0]) as OcrResult;
 }
 
+/** [프로덕션] /api/ocr 서버리스 함수 호출 → API 키 서버측 보호 */
+async function callOcrApi(base64: string, mimeType: string): Promise<OcrResult> {
+  const res = await fetch('/api/ocr', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64, mimeType }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: string };
+    throw new Error(err?.error ?? `서버 오류 ${res.status}`);
+  }
+
+  return res.json() as Promise<OcrResult>;
+}
+
 /** 모의 OCR 결과 (API 키 없을 때) */
 function mockOcr(): OcrResult {
   return {
@@ -94,7 +111,13 @@ function mockOcr(): OcrResult {
   };
 }
 
-/** 이미지 파일 → OcrResult */
+/** 이미지 파일 → OcrResult
+ *
+ * 환경별 동작:
+ *   로컬 + VITE_GEMINI_API_KEY 있음  → Gemini 직접 호출 (개발 편의)
+ *   로컬 + VITE_GEMINI_API_KEY 없음  → mock 반환 (데모 모드)
+ *   프로덕션 (Vercel)               → /api/ocr 서버리스 경유 (API 키 보호)
+ */
 export async function extractStudyFromImage(file: File): Promise<OcrResult> {
   const toBase64 = (f: File) =>
     new Promise<string>((resolve, reject) => {
@@ -104,12 +127,20 @@ export async function extractStudyFromImage(file: File): Promise<OcrResult> {
       reader.readAsDataURL(f);
     });
 
-  if (!API_KEY) {
-    // 데모: 1.5초 딜레이 후 모의 결과
+  const base64 = await toBase64(file);
+  const mimeType = file.type || 'image/jpeg';
+
+  // 1) 로컬 개발 + API 키 있음: 직접 Gemini 호출
+  if (API_KEY) {
+    return callGemini(base64, mimeType);
+  }
+
+  // 2) 로컬 개발 + API 키 없음: 데모 mock
+  if (import.meta.env.DEV) {
     await new Promise(r => setTimeout(r, 1500));
     return mockOcr();
   }
 
-  const base64 = await toBase64(file);
-  return callGemini(base64, file.type || 'image/jpeg');
+  // 3) 프로덕션(Vercel): 서버리스 함수 경유
+  return callOcrApi(base64, mimeType);
 }
