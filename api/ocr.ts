@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // Vercel Serverless Function: Gemini API 프록시
 // API 키는 서버측 환경변수(GEMINI_API_KEY)에서만 읽음 → 클라이언트 JS에 절대 노출되지 않음
 
