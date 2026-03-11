@@ -25,8 +25,6 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const { setupAccount } = useAuth();
 
-  const hasReal = isSupabaseConfigured;
-
   const handleParentLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError('');
