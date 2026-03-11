@@ -141,16 +141,17 @@ export default function ChildUpload() {
 
     // 실 계정: Supabase RPC
     try {
-      const result = await submitChildStudyLog(child!.id, child!.pin, {
+      await submitChildStudyLog(child!.id, child!.pin, {
         date, goal, totalMinutes,
         imageUrl: imageUrl ?? '',
         items,
       });
-      if (!result) throw new Error('제출에 실패했습니다.');
       setSubmitting(false);
       setStep('done');
     } catch (e) {
-      setError(`제출 중 오류가 발생했어요: ${(e as Error).message}`);
+      const msg = (e as Error).message;
+      console.error('제출 오류:', msg);
+      setError(`제출 오류: ${msg}`);
       setSubmitting(false);
     }
   };

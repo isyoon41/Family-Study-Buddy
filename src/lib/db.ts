@@ -322,7 +322,8 @@ export async function submitChildStudyLog(
       textbook_id:  i.textbook_id ?? null,
     })),
   });
-  if (error || !data) { console.error('submitChildStudyLog:', error); return null; }
+  if (error) throw new Error(error.message);
+  if (!data)  throw new Error('서버가 데이터를 반환하지 않았습니다');
   return data as { log_id: string };
 }
 
