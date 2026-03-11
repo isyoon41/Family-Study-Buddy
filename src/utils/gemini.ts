@@ -45,7 +45,12 @@ async function callGemini(base64: string, mimeType: string): Promise<OcrResult> 
         ],
       },
     ],
-    generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 2048,
+      // thinking 비활성화: 응답 형식을 단순하게 유지
+      thinkingConfig: { thinkingBudget: 0 },
+    },
   };
 
   const res = await fetch(`${ENDPOINT}?key=${API_KEY}`, {
@@ -60,9 +65,15 @@ async function callGemini(base64: string, mimeType: string): Promise<OcrResult> 
   }
 
   const data = await res.json() as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
   };
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+
+  // thinking 파트를 제외하고 실제 응답 텍스트만 추출
+  const parts = data.candidates?.[0]?.content?.parts ?? [];
+  const text = parts
+    .filter(p => !p.thought)
+    .map(p => p.text ?? '')
+    .join('');
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('JSON을 파싱할 수 없습니다.');
