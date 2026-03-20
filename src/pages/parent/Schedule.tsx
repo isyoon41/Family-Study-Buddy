@@ -131,6 +131,8 @@ export default function Schedule() {
       });
     }
 
+    // selected를 즉시 업데이트해서 화면에 바로 반영
+    setSelected({ ...selected, ...editData });
     setActing(false);
     setEditMode(false);
     setEditData(null);
