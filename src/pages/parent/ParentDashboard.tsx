@@ -286,12 +286,16 @@ export default function ParentDashboard() {
           {/* 통계 카드 */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { icon: '👶', label: '자녀 수',   value: childCount,     color: 'from-blue-400 to-blue-600' },
-              { icon: '⏳', label: '승인 대기', value: pending.length, color: 'from-yellow-400 to-orange-400' },
-              { icon: '⭐', label: '승인 완료', value: approved,       color: 'from-green-400 to-emerald-500' },
-              { icon: '📈', label: '승인율',   value: `${rate}%`,     color: 'from-purple-400 to-pink-500' },
+              { icon: '👶', label: '자녀 수',   value: childCount,     color: 'from-blue-400 to-blue-600',       to: '/parent/children' },
+              { icon: '⏳', label: '승인 대기', value: pending.length, color: 'from-yellow-400 to-orange-400',   to: '/parent/schedule' },
+              { icon: '⭐', label: '승인 완료', value: approved,       color: 'from-green-400 to-emerald-500',   to: null },
+              { icon: '📈', label: '승인율',   value: `${rate}%`,     color: 'from-purple-400 to-pink-500',     to: null },
             ].map(c => (
-              <div key={c.label} className={`bg-gradient-to-br ${c.color} rounded-2xl p-4 text-white shadow`}>
+              <div
+                key={c.label}
+                onClick={() => c.to && navigate(c.to)}
+                className={`bg-gradient-to-br ${c.color} rounded-2xl p-4 text-white shadow ${c.to ? 'cursor-pointer hover:opacity-90 active:scale-95 transition-transform' : ''}`}
+              >
                 <div className="text-2xl mb-1">{c.icon}</div>
                 <p className="text-2xl font-bold">{c.value}</p>
                 <p className="text-white/80 text-xs">{c.label}</p>
