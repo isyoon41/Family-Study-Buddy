@@ -118,6 +118,18 @@ export function deleteSheet(sheetId: string) {
   set(KEY.SHEETS, get<StudyLog[]>(KEY.SHEETS, []).filter(s => s.id !== sheetId));
 }
 
+export function updateSheetContent(
+  sheetId: string,
+  updates: { date: string; goal: string; total_minutes: number; items: StudyLog['items'] },
+) {
+  const list = get<StudyLog[]>(KEY.SHEETS, []);
+  const idx = list.findIndex(s => s.id === sheetId);
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], ...updates };
+    set(KEY.SHEETS, list);
+  }
+}
+
 // ── Textbooks ────────────────────────────────────────────────────
 export function getTextbooks(childId: string): Textbook[] {
   return get<Textbook[]>(KEY.TEXTBOOKS, []).filter(t => t.child_id === childId);

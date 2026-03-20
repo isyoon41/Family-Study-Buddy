@@ -292,6 +292,39 @@ export async function deleteStudyLog(logId: string): Promise<boolean> {
   return !error;
 }
 
+export async function updateStudyLogContent(
+  logId: string,
+  updates: { date: string; goal: string; total_minutes: number; items: StudyItem[] },
+): Promise<boolean> {
+  const { error: logError } = await supabase
+    .from('study_logs')
+    .update({ date: updates.date, goal: updates.goal, total_minutes: updates.total_minutes })
+    .eq('id', logId);
+  if (logError) return false;
+
+  const { error: delError } = await supabase
+    .from('study_items')
+    .delete()
+    .eq('log_id', logId);
+  if (delError) return false;
+
+  if (updates.items.length > 0) {
+    const { error: insError } = await supabase
+      .from('study_items')
+      .insert(updates.items.map(i => ({
+        log_id: logId,
+        subject: i.subject,
+        task_text: i.task_text,
+        quantity_raw: i.quantity_raw,
+        completed: i.completed,
+        textbook_id: i.textbook_id ?? null,
+      })));
+    if (insError) return false;
+  }
+
+  return true;
+}
+
 // ================================================================
 // 학습 일지 제출 (자녀용, RPC)
 // ================================================================
