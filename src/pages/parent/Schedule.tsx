@@ -22,8 +22,13 @@ const SUBJECT_COLORS: Record<string, string> = {
   영어: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300',
   과학: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300',
   사회: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300',
+  한자: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300',
+  중국어: 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300',
+  '성경 말씀(큐티)': 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300',
+  독서: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  '전과목 학습지': 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300',
 };
-const SUBJECTS = ['수학', '국어', '영어', '과학', '사회', '기타'];
+const SUBJECTS = ['수학', '국어', '영어', '과학', '사회', '한자', '중국어', '성경 말씀(큐티)', '독서', '전과목 학습지', '기타'];
 const STATUS_TABS = [
   { value: 'all', label: '전체' },
   { value: 'pending', label: '⏳ 대기' },

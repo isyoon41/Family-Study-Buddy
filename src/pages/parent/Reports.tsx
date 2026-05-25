@@ -10,6 +10,8 @@ import type { StudyLog, Child } from '../../types';
 const SUBJECT_COLORS: Record<string, string> = {
   수학: '#3b82f6', 국어: '#10b981', 영어: '#8b5cf6',
   과학: '#f59e0b', 사회: '#f97316',
+  한자: '#ef4444', 중국어: '#f43f5e',
+  '성경 말씀(큐티)': '#0ea5e9', 독서: '#d97706', '전과목 학습지': '#6366f1',
 };
 const WEEKDAY_KO  = ['일', '월', '화', '수', '목', '금', '토'];
 const WEEKDAY_COLOR = [
