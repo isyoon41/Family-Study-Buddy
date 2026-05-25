@@ -146,6 +146,22 @@ export default function ChildUpload() {
         imageUrl: imageUrl ?? '',
         items,
       });
+
+      // 부모 이메일 알림 (fire-and-forget — 실패해도 제출은 완료)
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          familyId: family?.id,
+          childName: child?.name,
+          childAvatar: child?.avatar,
+          date,
+          goal,
+          items,
+          totalMinutes,
+        }),
+      }).catch(() => {});
+
       setSubmitting(false);
       setStep('done');
     } catch (e) {
