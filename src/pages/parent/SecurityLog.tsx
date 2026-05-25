@@ -7,15 +7,15 @@ import { getActivityLogs } from '../../lib/db';
 import type { ActivityLog } from '../../types';
 
 const TYPE_STYLE: Record<string, { icon: string; color: string }> = {
-  login_parent:  { icon: '🔑', color: 'bg-blue-100 text-blue-700' },
-  login_child:   { icon: '🎒', color: 'bg-purple-100 text-purple-700' },
-  logout:        { icon: '🚪', color: 'bg-gray-100 text-gray-500' },
-  submit:        { icon: '📤', color: 'bg-teal-100 text-teal-700' },
-  approve:       { icon: '⭐', color: 'bg-green-100 text-green-700' },
-  reject:        { icon: '✏️', color: 'bg-orange-100 text-orange-700' },
-  delete:        { icon: '🗑️', color: 'bg-red-100 text-red-600' },
-  pin_fail:      { icon: '🚫', color: 'bg-red-100 text-red-600' },
-  external_link: { icon: '🔗', color: 'bg-yellow-100 text-yellow-700' },
+  login_parent:  { icon: '🔑', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
+  login_child:   { icon: '🎒', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
+  logout:        { icon: '🚪', color: 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400' },
+  submit:        { icon: '📤', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' },
+  approve:       { icon: '⭐', color: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
+  reject:        { icon: '✏️', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' },
+  delete:        { icon: '🗑️', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' },
+  pin_fail:      { icon: '🚫', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' },
+  external_link: { icon: '🔗', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' },
 };
 
 function formatTime(ts: string) {
@@ -54,7 +54,6 @@ export default function SecurityLog() {
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
 
-  // 날짜 그룹핑
   const grouped: Record<string, ActivityLog[]> = {};
   for (const log of logs) {
     const day = log.timestamp.slice(0, 10);
@@ -67,7 +66,7 @@ export default function SecurityLog() {
       <div className="flex justify-center items-center py-20">
         <div className="flex gap-2">
           {[0,1,2].map(i => (
-            <div key={i} className="w-3 h-3 bg-blue-300 rounded-full animate-bounce"
+            <div key={i} className="w-3 h-3 bg-blue-300 dark:bg-blue-500 rounded-full animate-bounce"
               style={{ animationDelay: `${i * 0.2}s` }} />
           ))}
         </div>
@@ -79,39 +78,41 @@ export default function SecurityLog() {
     <div className="p-4 lg:p-6 max-w-2xl mx-auto space-y-5">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-gray-800">활동 로그</h1>
-          <p className="text-gray-400 text-sm">가족 계정의 모든 활동을 확인해요</p>
+          <h1 className="text-xl font-bold text-gray-800 dark:text-white">활동 로그</h1>
+          <p className="text-gray-400 dark:text-slate-500 text-sm">가족 계정의 모든 활동을 확인해요</p>
         </div>
         {!isDemo && (
-          <button onClick={loadLogs} className="text-xs text-blue-400 hover:text-blue-600">↻ 새로고침</button>
+          <button onClick={loadLogs} className="text-xs text-blue-400 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition">
+            ↻ 새로고침
+          </button>
         )}
       </div>
 
       {logs.length === 0 && (
-        <div className="bg-white rounded-2xl p-10 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-10 text-center shadow-sm transition-colors duration-300">
           <p className="text-3xl mb-2">🔒</p>
-          <p className="text-gray-400">아직 활동 기록이 없어요</p>
+          <p className="text-gray-400 dark:text-slate-500">아직 활동 기록이 없어요</p>
         </div>
       )}
 
       {days.map(day => (
         <div key={day}>
-          <p className="text-xs font-bold text-gray-400 mb-2 px-1">
+          <p className="text-xs font-bold text-gray-400 dark:text-slate-500 mb-2 px-1">
             {new Date(day).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}
           </p>
           <div className="space-y-2">
             {grouped[day].map(log => {
-              const style = TYPE_STYLE[log.type] ?? { icon: '📌', color: 'bg-gray-100 text-gray-600' };
+              const style = TYPE_STYLE[log.type] ?? { icon: '📌', color: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-400' };
               return (
-                <div key={log.id} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex items-center gap-3">
+                <div key={log.id} className="bg-white dark:bg-slate-800 rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-slate-700 flex items-center gap-3 transition-colors duration-300">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${style.color}`}>
                     {style.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800">{log.description}</p>
-                    <p className="text-xs text-gray-400">{log.actor} · {formatFull(log.timestamp)}</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{log.description}</p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500">{log.actor} · {formatFull(log.timestamp)}</p>
                   </div>
-                  <p className="text-xs text-gray-300 flex-shrink-0">{formatTime(log.timestamp)}</p>
+                  <p className="text-xs text-gray-300 dark:text-slate-600 flex-shrink-0">{formatTime(log.timestamp)}</p>
                 </div>
               );
             })}
