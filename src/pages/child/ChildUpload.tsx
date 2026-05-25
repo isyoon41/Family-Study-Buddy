@@ -15,6 +15,7 @@ const SUBJECT_COLORS: Record<string, string> = {
   사회: 'bg-orange-100 text-orange-600', 한자: 'bg-red-100 text-red-600',
   중국어: 'bg-rose-100 text-rose-600', '성경 말씀(큐티)': 'bg-sky-100 text-sky-600',
   독서: 'bg-amber-100 text-amber-700', '전과목 학습지': 'bg-indigo-100 text-indigo-600',
+  도덕: 'bg-lime-100 text-lime-700',
 };
 
 /** 이미지 base64를 최대 800px / 80% 품질로 압축 */

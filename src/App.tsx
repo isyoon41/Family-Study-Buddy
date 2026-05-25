@@ -6,6 +6,7 @@ import ChildSelect from './pages/child/ChildSelect';
 import ChildPinLogin from './pages/child/ChildPinLogin';
 import ChildDashboard from './pages/child/ChildDashboard';
 import ChildUpload from './pages/child/ChildUpload';
+import ChildBooks from './pages/child/ChildBooks';
 import ParentLayout from './pages/parent/ParentLayout';
 import ParentDashboard from './pages/parent/ParentDashboard';
 import Children from './pages/parent/Children';
@@ -34,6 +35,7 @@ function AppRoutes() {
       <Route path="/child/pin/:childId" element={<ChildPinLogin />} />
       <Route path="/child/dashboard" element={<ChildGuard><ChildDashboard /></ChildGuard>} />
       <Route path="/child/upload" element={<ChildGuard><ChildUpload /></ChildGuard>} />
+      <Route path="/child/books"  element={<ChildGuard><ChildBooks /></ChildGuard>} />
 
       <Route path="/parent" element={<ParentGuard><ParentLayout /></ParentGuard>}>
         <Route index element={<ParentDashboard />} />

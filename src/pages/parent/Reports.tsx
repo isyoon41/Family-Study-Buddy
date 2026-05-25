@@ -11,7 +11,7 @@ const SUBJECT_COLORS: Record<string, string> = {
   수학: '#3b82f6', 국어: '#10b981', 영어: '#8b5cf6',
   과학: '#f59e0b', 사회: '#f97316',
   한자: '#ef4444', 중국어: '#f43f5e',
-  '성경 말씀(큐티)': '#0ea5e9', 독서: '#d97706', '전과목 학습지': '#6366f1',
+  '성경 말씀(큐티)': '#0ea5e9', 독서: '#d97706', '전과목 학습지': '#6366f1', 도덕: '#65a30d',
 };
 const WEEKDAY_KO  = ['일', '월', '화', '수', '목', '금', '토'];
 const WEEKDAY_COLOR = [
@@ -148,6 +148,28 @@ export default function Reports() {
 
   const totalMin = approved.reduce((s, l) => s + l.total_minutes, 0);
 
+  // 독서 목록
+  const bookData = useMemo(() => {
+    const childMap = new Map(children.map(c => [c.id, c]));
+    const map: Record<string, { childIds: Set<string>; count: number; lastDate: string }> = {};
+    for (const log of approved) {
+      for (const item of log.items) {
+        if (item.subject !== '독서' || !item.task_text.trim()) continue;
+        const title = item.task_text.trim();
+        if (!map[title]) map[title] = { childIds: new Set(), count: 0, lastDate: log.date };
+        map[title].childIds.add(log.child_id);
+        map[title].count++;
+        if (log.date > map[title].lastDate) map[title].lastDate = log.date;
+      }
+    }
+    return Object.entries(map)
+      .sort((a, b) => b[1].lastDate.localeCompare(a[1].lastDate))
+      .map(([title, { childIds, count, lastDate }]) => ({
+        title, count, lastDate,
+        childInfos: [...childIds].map(id => childMap.get(id)).filter(Boolean),
+      }));
+  }, [approved, children]);
+
   const exportCSV = () => {
     const rows = [
       ['날짜', '자녀', '목표', '과목', '내용', '분량', '완료', '공부시간(분)', '상태'],
@@ -250,6 +272,35 @@ export default function Reports() {
           : <BarChart data={subjectData} />
         }
       </div>
+
+      {/* 독서 목록 */}
+      {bookData.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-300">
+          <h2 className="font-bold text-gray-700 dark:text-slate-200 mb-4 flex items-center gap-2">
+            📖 읽은 책 목록
+            <span className="text-xs font-normal text-gray-400 dark:text-slate-500">({bookData.length}권)</span>
+          </h2>
+          <div className="space-y-2">
+            {bookData.map(({ title, count, lastDate, childInfos }) => (
+              <div key={title} className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 rounded-xl">
+                <span className="text-xl flex-shrink-0">📚</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-800 dark:text-white text-sm truncate">{title}</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500">{lastDate}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {childInfos.map(c => (
+                    <span key={c!.id} title={c!.name} className="text-base">{c!.avatar}</span>
+                  ))}
+                  {count > 1 && (
+                    <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full font-bold ml-1">×{count}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 자녀별 현황 */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-300">

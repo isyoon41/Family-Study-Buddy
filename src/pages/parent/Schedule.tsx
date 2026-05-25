@@ -27,8 +27,9 @@ const SUBJECT_COLORS: Record<string, string> = {
   '성경 말씀(큐티)': 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300',
   독서: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
   '전과목 학습지': 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300',
+  도덕: 'bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300',
 };
-const SUBJECTS = ['수학', '국어', '영어', '과학', '사회', '한자', '중국어', '성경 말씀(큐티)', '독서', '전과목 학습지', '기타'];
+const SUBJECTS = ['수학', '국어', '영어', '과학', '사회', '한자', '중국어', '성경 말씀(큐티)', '독서', '전과목 학습지', '도덕', '기타'];
 const STATUS_TABS = [
   { value: 'all', label: '전체' },
   { value: 'pending', label: '⏳ 대기' },

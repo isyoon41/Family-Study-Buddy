@@ -25,6 +25,7 @@ const SUBJECT_COLORS: Record<string, string> = {
   '성경 말씀(큐티)': 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300',
   독서: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
   '전과목 학습지': 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300',
+  도덕: 'bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300',
 };
 
 // ── 칭찬 셀레브레이션 파티클 ─────────────────────────────
@@ -282,6 +283,17 @@ export default function ChildDashboard() {
         >
           <span className="text-2xl animate-bounce-soft">📸</span>
           오늘 공부 기록하기
+        </button>
+
+        {/* 독서 컬렉션 바로가기 */}
+        <button
+          onClick={() => navigate('/child/books')}
+          className="w-full bg-gradient-to-r from-amber-400 to-orange-400 dark:from-amber-600 dark:to-orange-600
+            text-white py-4 rounded-3xl font-bold text-base shadow-md
+            hover:opacity-90 active:scale-95 transition-all duration-200
+            flex items-center justify-center gap-2">
+          <span className="text-xl">📚</span>
+          내 독서 컬렉션 보기
         </button>
 
         {/* 확인 대기 알림 */}
