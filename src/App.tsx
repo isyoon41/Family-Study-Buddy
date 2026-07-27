@@ -1,6 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { supabase } from './lib/supabase';
 import Index from './pages/Index';
 import ChildSelect from './pages/child/ChildSelect';
 import ChildPinLogin from './pages/child/ChildPinLogin';
@@ -29,6 +31,17 @@ function ParentGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   return (
     <Routes>
       <Route path="/" element={<Index />} />
