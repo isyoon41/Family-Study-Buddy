@@ -237,7 +237,7 @@ export default function ChildDashboard() {
       <div className="max-w-md mx-auto px-4 -mt-16 pb-10 space-y-4">
 
         {/* 통계 카드 (히어로 위에 겹침) */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-4 grid grid-cols-4 gap-2 animate-pop-in">
+        <div className="bg-white dark:bg-slate-800 rounded-[32px] shadow-xl p-5 grid grid-cols-4 gap-2 animate-pop-in">
           {[
             { icon: '⭐', value: approved.length, label: '칭찬 받은 날' },
             { icon: '🔥', value: `${streak}일`,  label: '연속 달성' },
@@ -263,7 +263,7 @@ export default function ChildDashboard() {
         </div>
 
         {/* 뱃지 섹션 */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-[28px] shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-extrabold text-gray-800 dark:text-white text-sm flex items-center gap-1.5">
               🎖️ 내 뱃지

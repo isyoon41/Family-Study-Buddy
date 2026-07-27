@@ -199,7 +199,7 @@ export default function Reports() {
   }
 
   return (
-    <div className="p-4 lg:p-6 max-w-3xl mx-auto space-y-5">
+    <div className="p-5 lg:p-8 max-w-3xl mx-auto space-y-5">
       {/* 헤더 */}
       <div className="flex justify-between items-center">
         <div>
@@ -233,7 +233,7 @@ export default function Reports() {
           { icon: '⏱', label: '총 공부 시간', value: `${Math.floor(totalMin / 60)}h ${totalMin % 60}m`, sub: '' },
           { icon: '📚', label: '완료 항목', value: approved.reduce((s, l) => s + l.items.filter(i => i.completed).length, 0), sub: '개' },
         ].map(c => (
-          <div key={c.label} className="bg-white dark:bg-slate-800 rounded-2xl p-4 text-center shadow-sm animate-slide-up transition-colors duration-300">
+          <div key={c.label} className="bg-white dark:bg-slate-800 rounded-[28px] p-4 text-center shadow-sm animate-slide-up transition-colors duration-300">
             <p className="text-2xl mb-1">{c.icon}</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">{c.value}{c.sub}</p>
             <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{c.label}</p>
@@ -242,7 +242,7 @@ export default function Reports() {
       </div>
 
       {/* 요일별 공부 패턴 */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-300">
+      <div className="bg-white dark:bg-slate-800 rounded-[32px] p-5 shadow-sm transition-colors duration-300">
         <h2 className="font-bold text-gray-700 dark:text-slate-200 mb-4 flex items-center gap-2">
           📅 요일별 공부 패턴
           <span className="text-xs font-normal text-gray-400 dark:text-slate-500">(승인된 기록 기준)</span>
@@ -265,7 +265,7 @@ export default function Reports() {
       </div>
 
       {/* 과목별 공부 시간 */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-300">
+      <div className="bg-white dark:bg-slate-800 rounded-[32px] p-5 shadow-sm transition-colors duration-300">
         <h2 className="font-bold text-gray-700 dark:text-slate-200 mb-4">📊 과목별 공부 시간</h2>
         {subjectData.length === 0
           ? <p className="text-gray-400 dark:text-slate-500 text-sm text-center py-4">데이터가 없어요</p>
@@ -275,7 +275,7 @@ export default function Reports() {
 
       {/* 독서 목록 */}
       {bookData.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-300">
+        <div className="bg-white dark:bg-slate-800 rounded-[32px] p-5 shadow-sm transition-colors duration-300">
           <h2 className="font-bold text-gray-700 dark:text-slate-200 mb-4 flex items-center gap-2">
             📖 읽은 책 목록
             <span className="text-xs font-normal text-gray-400 dark:text-slate-500">({bookData.length}권)</span>
@@ -303,7 +303,7 @@ export default function Reports() {
       )}
 
       {/* 자녀별 현황 */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-300">
+      <div className="bg-white dark:bg-slate-800 rounded-[32px] p-5 shadow-sm transition-colors duration-300">
         <h2 className="font-bold text-gray-700 dark:text-slate-200 mb-4">👨‍👩‍👧 자녀별 현황</h2>
         <div className="space-y-4">
           {childStats.map(({ child, logs, total_min, items_done, items_total, streak }) => {

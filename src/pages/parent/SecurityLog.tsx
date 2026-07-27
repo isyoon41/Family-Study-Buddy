@@ -75,7 +75,7 @@ export default function SecurityLog() {
   }
 
   return (
-    <div className="p-4 lg:p-6 max-w-2xl mx-auto space-y-5">
+    <div className="p-5 lg:p-8 max-w-2xl mx-auto space-y-5">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-gray-800 dark:text-white">활동 로그</h1>

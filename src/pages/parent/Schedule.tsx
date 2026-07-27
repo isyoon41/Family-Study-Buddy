@@ -324,7 +324,7 @@ export default function Schedule() {
                 )}
               </div>
             : (
-              <div className="p-4 lg:p-6 max-w-2xl">
+              <div className="p-5 lg:p-8 max-w-2xl">
                 <button
                   onClick={() => { setSelected(null); cancelEdit(); }}
                   className="lg:hidden text-sm text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 mb-4 flex items-center gap-1 transition">

@@ -194,7 +194,7 @@ export default function Children() {
   }
 
   return (
-    <div className="p-4 lg:p-6 max-w-3xl mx-auto space-y-5">
+    <div className="p-5 lg:p-8 max-w-3xl mx-auto space-y-5">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-gray-800 dark:text-white">자녀 관리</h1>
@@ -229,7 +229,7 @@ export default function Children() {
         const childBooks = getChildBooks(child.id);
         const isExpanded = expandedChild === child.id;
         return (
-          <div key={child.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 transition-colors duration-300">
+          <div key={child.id} className="bg-white dark:bg-slate-800 rounded-[28px] shadow-sm border border-gray-100 dark:border-slate-700 transition-colors duration-300">
             {/* 자녀 헤더 */}
             <div className="p-4 flex items-center gap-3">
               <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">

@@ -79,9 +79,9 @@ function StudyCalendar({ approvedLogs }: { approvedLogs: StudyLog[] }) {
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm transition-colors duration-300">
+    <div className="bg-white dark:bg-slate-800 rounded-[32px] p-5 shadow-sm transition-colors duration-300">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-bold text-gray-700 dark:text-slate-200">📅 학습 캘린더</h2>
+        <h2 className="font-semibold text-gray-800 dark:text-slate-100 tracking-tight">📅 학습 캘린더</h2>
         <div className="flex items-center gap-2">
           <button onClick={prevMonth} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400 text-lg transition">‹</button>
           <span className="text-sm font-semibold text-gray-700 dark:text-slate-200 w-24 text-center">{viewYear}년 {viewMonth + 1}월</span>
@@ -204,11 +204,11 @@ export default function ParentDashboard() {
   ];
 
   return (
-    <div className="p-4 lg:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-5 lg:p-8 max-w-4xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">대시보드</h1>
-          <p className="text-gray-400 dark:text-slate-500 text-sm">오늘도 아이들 응원해주세요 💪</p>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight" style={{ letterSpacing: '-0.48px' }}>대시보드</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#93979f' }}>오늘도 아이들 응원해주세요 💪</p>
         </div>
         {!isDemo && (
           <button onClick={loadData} className="text-sm text-blue-400 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition">↻ 새로고침</button>
@@ -232,7 +232,7 @@ export default function ParentDashboard() {
                 key={c.label}
                 onClick={() => c.to && navigate(c.to)}
                 style={{ animationDelay: `${i * 0.08}s`, animationFillMode: 'both', opacity: 0 }}
-                className={`bg-gradient-to-br ${c.gradient} rounded-2xl p-4 text-white shadow-md animate-slide-up
+                className={`bg-gradient-to-br ${c.gradient} rounded-[24px] p-4 text-white shadow-md animate-slide-up
                   ${c.to ? 'cursor-pointer hover:opacity-90 active:scale-95 transition-transform' : ''}`}
               >
                 <div className="text-2xl mb-1">{c.icon}</div>
@@ -257,7 +257,7 @@ export default function ParentDashboard() {
                   const childStreak = calcStreak(approvedLogs.filter(l => l.child_id === log.child_id));
                   return (
                     <button key={log.id} onClick={() => navigate('/parent/schedule')}
-                      className="w-full bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border-l-4 border-amber-400 text-left hover:shadow-md transition dark:border-amber-500">
+                      className="w-full bg-white dark:bg-slate-800 rounded-[24px] p-4 shadow-sm border-l-4 border-amber-400 text-left hover:shadow-md transition dark:border-amber-500">
                       <div className="flex justify-between items-center">
                         <div>
                           <div className="flex items-center gap-2">
@@ -293,7 +293,7 @@ export default function ParentDashboard() {
               {recentLogs.length === 0
                 ? <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center text-gray-400 dark:text-slate-500 shadow-sm">아직 기록이 없어요</div>
                 : recentLogs.map(log => (
-                  <div key={log.id} className="bg-white dark:bg-slate-800 rounded-2xl p-3 shadow-sm flex items-center gap-3 transition-colors duration-300">
+                  <div key={log.id} className="bg-white dark:bg-slate-800 rounded-[20px] p-3 shadow-sm flex items-center gap-3 transition-colors duration-300">
                     <span className="text-2xl">{log.child_avatar}</span>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-800 dark:text-white">{log.child_name} · {log.date}</p>

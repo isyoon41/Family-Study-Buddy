@@ -1,44 +1,68 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
-const MINI_CARDS = [
-  { bg: 'from-blue-500 to-purple-500', title: '자녀 대시보드', icon: '🐶', lines: ['민준 · 초5', '✅ 수학 p.112~120', '✅ 국어 독해 p.34~36', '⏳ 영어 단어 20개'] },
-  { bg: 'from-green-400 to-teal-500', title: '오늘의 계획표', icon: '📚', lines: ['수학 ████████ 80%', '국어 ██████ 60%', '영어 ████ 40%'] },
-  { bg: 'from-yellow-400 to-orange-400', title: '부모님 승인', icon: '⭐', lines: ['잘했어요! ⭐', '민준이 오늘도 최고!', '🔥 연속 5일 달성'] },
-  { bg: 'from-gray-800 to-gray-900', title: 'AI 사진 인식', icon: '📷', lines: ['사진 → 텍스트 자동 추출', '✨ Gemini AI 분석 중...', '수학 · 국어 · 영어'] },
-  { bg: 'from-pink-500 to-purple-600', title: '주간 리포트', icon: '📊', lines: ['이번 주 출석률 92%', '총 공부 시간 14h', '과목별 진도 차트'] },
-  { bg: 'from-orange-400 to-rose-400', title: '부모님 메시지', icon: '💬', lines: ['💪 오늘도 화이팅!', '🎉 100점 축하해!', '⭐ 정말 잘했어요'] },
-  { bg: 'from-sky-400 to-blue-500', title: 'PIN 로그인', icon: '🔑', lines: ['●●●●', '4자리 PIN으로', '쉽게 로그인'] },
-  { bg: 'from-emerald-600 to-green-700', title: '교재 진도 관리', icon: '📖', lines: ['수학의 정석 120/350p', '국어 독해 36/160p', '진도율 34%'] },
+// ── Geniestudio Design Tokens ───────────────────────────────────
+const G = {
+  canvas:   '#ebf5ff',
+  card:     '#fafdff',
+  ink:      '#0a0d12',
+  charcoal: '#181d27',
+  graphite: '#535862',
+  fog:      '#93979f',
+  iris:     '#0069e0',
+  lavender: '#f1e6ff',
+  mint:     '#d3f6e3',
+  powder:   '#cce7ff',
+  solar:    '#fff9e0',
+  peach:    '#ffe8d6',
+} as const;
+
+const darkPill: React.CSSProperties = {
+  backgroundColor: G.charcoal, color: '#fff', borderRadius: 9999,
+  padding: '12px 28px', fontSize: 15, fontWeight: 500, letterSpacing: '-0.01em',
+  border: 'none', cursor: 'pointer',
+  boxShadow: '0 1px 2px rgba(10,13,18,0.8), 0 0 0 1px #0a0d12',
+  display: 'inline-flex', alignItems: 'center', gap: 8,
+};
+const ghostPill: React.CSSProperties = {
+  backgroundColor: 'transparent', color: G.ink, borderRadius: 9999,
+  padding: '12px 28px', fontSize: 15, fontWeight: 500, letterSpacing: '-0.01em',
+  border: '1.5px solid rgba(10,13,18,0.15)', cursor: 'pointer',
+  display: 'inline-flex', alignItems: 'center', gap: 8,
+};
+const inputStyle: React.CSSProperties = {
+  width: '100%', border: '1.5px solid rgba(10,13,18,0.12)', borderRadius: 14,
+  padding: '12px 16px', fontSize: 15, backgroundColor: '#fff', color: G.ink,
+  outline: 'none', letterSpacing: '-0.01em', fontFamily: 'inherit',
+  boxSizing: 'border-box',
+};
+
+const FEATURES = [
+  { icon: '📸', title: 'AI 사진 분석', desc: '공부 노트 사진 한 장이면 Gemini AI가 과목·분량을 자동 정리해요', bg: G.lavender },
+  { icon: '✅', title: '실시간 부모 확인', desc: '자녀가 제출하면 즉시 이메일 알림 — 어디서나 바로 승인 가능', bg: G.mint },
+  { icon: '📊', title: '과목별 리포트', desc: '주간·월간 공부 현황을 한눈에, CSV 내보내기까지 제공해요', bg: G.powder },
+  { icon: '🪙', title: '주간 보상 코인', desc: '6일 달성 시 300코인 자동 지급 — 부모님이 직접 정산할 수 있어요', bg: G.solar },
+];
+
+const DEMO_CHILDREN = [
+  { id: 'child-001', name: '민준', grade: '초5', avatar: '🐶', pin: '1234' },
+  { id: 'child-002', name: '서연', grade: '초3', avatar: '🦊', pin: '5678' },
 ];
 
 export default function Index() {
   const navigate = useNavigate();
-  const { loginAsParent } = useAuth();
-  const { dark, toggle } = useTheme();
+  const { loginAsParent, setupAccount } = useAuth();
   const [view, setView] = useState<'landing' | 'parent_login' | 'parent_setup' | 'forgot_password'>('landing');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail]           = useState('');
+  const [password, setPassword]     = useState('');
   const [familyName, setFamilyName] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  const { setupAccount } = useAuth();
+  const [error, setError]           = useState('');
+  const [loading, setLoading]       = useState(false);
+  const [resetSent, setResetSent]   = useState(false);
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) { setError('이메일을 입력해주세요.'); return; }
-    setLoading(true); setError('');
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setLoading(false);
-    if (err) setError(err.message);
-    else setResetSent(true);
-  };
+  const go = (v: typeof view) => { setView(v); setError(''); setResetSent(false); };
 
   const handleParentLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,216 +84,227 @@ export default function Index() {
     else navigate('/parent');
   };
 
-  const inputCls = 'w-full border dark:border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm bg-white dark:bg-slate-700 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 transition-colors';
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) { setError('이메일을 입력해주세요.'); return; }
+    setLoading(true); setError('');
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (err) setError(err.message);
+    else setResetSent(true);
+  };
 
-  return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* ── 왼쪽 패널 (카드 그리드 배경) ── */}
-      <div className="lg:w-2/5 bg-gradient-to-br from-blue-600 via-teal-500 to-emerald-500 relative overflow-hidden min-h-[260px] lg:min-h-screen">
-        <div className="absolute inset-[-20%] rotate-[-4deg] scale-110 overflow-hidden opacity-30">
-          <div className="grid grid-cols-2 gap-3 p-4">
-            {MINI_CARDS.map((card, i) => (
-              <div key={i} className={`bg-gradient-to-br ${card.bg} rounded-2xl p-3 shadow-lg`}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="text-xl">{card.icon}</span>
-                  <p className="text-white text-xs font-bold truncate">{card.title}</p>
-                </div>
-                {card.lines.map((l, j) => (
-                  <p key={j} className="text-white/80 text-xs truncate leading-5">{l}</p>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/70 via-teal-500/50 to-emerald-500/60" />
-        <div className="relative z-10 flex flex-col items-center justify-center h-full py-10 px-6 text-center">
-          <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-4xl mb-4 shadow-lg">📖</div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2">공부 플래너</h1>
-          <p className="text-white/80 text-sm mb-6">가족이 함께 만드는 학습 습관</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {['📸 사진 한 장으로 기록', '✅ 부모님 바로 확인', '🤖 AI 자동 분석', '📊 과목별 리포트'].map(t => (
-              <span key={t} className="bg-white/20 backdrop-blur text-white text-xs px-3 py-1.5 rounded-full">{t}</span>
-            ))}
-          </div>
-        </div>
-      </div>
+  // ── Shared card wrapper ──────────────────────────────────────
+  const Card = ({ children }: { children: React.ReactNode }) => (
+    <div style={{ backgroundColor: G.card, borderRadius: 32, padding: 40,
+      boxShadow: 'rgba(4,69,144,0.08) 0 14px 20px 4px', maxWidth: 440, width: '100%', margin: '0 auto' }}>
+      {children}
+    </div>
+  );
 
-      {/* ── 오른쪽 패널 ── */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 dark:bg-slate-900 transition-colors duration-300 relative">
-        {/* 다크모드 토글 */}
-        <button
-          onClick={toggle}
-          title={dark ? '라이트 모드' : '다크 모드'}
-          className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition text-base"
-        >
-          {dark ? '☀️' : '🌙'}
-        </button>
+  // ── Non-landing views ────────────────────────────────────────
+  if (view !== 'landing') {
+    return (
+      <div style={{ backgroundColor: G.canvas, minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
+        {/* Mini nav */}
+        <nav style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button onClick={() => go('landing')} style={{ display: 'flex', alignItems: 'center', gap: 8,
+            background: 'none', border: 'none', cursor: 'pointer' }}>
+            <span style={{ fontSize: 20 }}>📖</span>
+            <span style={{ color: G.ink, fontWeight: 600, fontSize: 15, letterSpacing: '-0.01em' }}>공부 플래너</span>
+          </button>
+          <button onClick={() => go('landing')} style={{ ...ghostPill, padding: '8px 18px', fontSize: 13 }}>
+            ← 돌아가기
+          </button>
+        </nav>
 
-        <div className="w-full max-w-sm">
-
-          {/* 랜딩 */}
-          {view === 'landing' && (
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl dark:shadow-slate-900/50 p-6 animate-fade-in border dark:border-slate-700 transition-colors duration-300">
-              <h2 className="text-xl font-bold text-center text-gray-800 dark:text-white mb-1">시작하기</h2>
-              <p className="text-gray-400 dark:text-slate-500 text-sm text-center mb-5">누구로 시작할까요?</p>
-
-              <button
-                onClick={() => navigate('/child')}
-                className="w-full flex items-center justify-between p-4 border-2 border-gray-100 dark:border-slate-700 rounded-2xl hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition mb-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🎒</span>
-                  <div className="text-left">
-                    <p className="font-bold text-gray-800 dark:text-white">자녀로 로그인</p>
-                    <p className="text-gray-400 dark:text-slate-500 text-xs">PIN 번호 사용</p>
-                  </div>
-                </div>
-                <span className="text-gray-400 dark:text-slate-500">›</span>
-              </button>
-
-              <button
-                onClick={() => setView('parent_login')}
-                className="w-full flex items-center justify-between p-4 border-2 border-gray-100 dark:border-slate-700 rounded-2xl hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition mb-5"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">👨‍👩‍👧</span>
-                  <div className="text-left">
-                    <p className="font-bold text-gray-800 dark:text-white">부모님으로 로그인</p>
-                    <p className="text-gray-400 dark:text-slate-500 text-xs">이메일과 비밀번호 사용</p>
-                  </div>
-                </div>
-                <span className="text-gray-400 dark:text-slate-500">›</span>
-              </button>
-
-              {/* 데모 체험 */}
-              <div className="border-t dark:border-slate-700 pt-4">
-                <p className="text-center text-gray-400 dark:text-slate-500 text-xs mb-3">✨ 가짜 데이터로 바로 체험</p>
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-3 space-y-2 border dark:border-blue-800/50">
-                  <button
-                    onClick={() => loginAsParent('parent@example.com', 'password123').then(() => navigate('/parent'))}
-                    className="w-full flex items-center justify-between p-3 bg-white dark:bg-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-600 transition shadow-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">👨‍👩‍👧</span>
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-gray-800 dark:text-white">부모님 계정 체험</p>
-                        <p className="text-xs text-gray-400 dark:text-slate-400">승인·리포트·교재관리</p>
-                      </div>
-                    </div>
-                    <span className="text-gray-400 dark:text-slate-400 text-sm">→</span>
-                  </button>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[{ id: 'child-001', name: '민준', grade: '초5', avatar: '🐶', pin: '1234' },
-                      { id: 'child-002', name: '서연', grade: '초3', avatar: '🦊', pin: '5678' }].map(c => (
-                      <button key={c.id} onClick={() => navigate(`/child/pin/${c.id}`)}
-                        className="flex flex-col items-center p-3 bg-white dark:bg-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-600 transition shadow-sm">
-                        <span className="text-3xl">{c.avatar}</span>
-                        <p className="font-bold text-sm text-gray-800 dark:text-white mt-1">{c.name}</p>
-                        <p className="text-xs text-gray-400 dark:text-slate-400">{c.grade} · PIN {c.pin}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 부모님 로그인 */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
+          {/* ── 부모 로그인 ── */}
           {view === 'parent_login' && (
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl dark:shadow-slate-900/50 p-6 animate-fade-in border dark:border-slate-700 transition-colors duration-300">
-              <button onClick={() => { setView('landing'); setError(''); }}
-                className="text-gray-400 dark:text-slate-500 mb-4 hover:text-gray-600 dark:hover:text-slate-300 transition text-sm flex items-center gap-1">
-                ← 뒤로
-              </button>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1">부모님 로그인</h2>
-              <p className="text-gray-400 dark:text-slate-500 text-sm mb-4">이메일과 비밀번호를 입력하세요</p>
-              <form onSubmit={handleParentLogin} className="space-y-3">
-                <input type="email" placeholder="이메일" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-                <input type="password" placeholder="비밀번호" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} />
-                {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
-                <button type="submit" disabled={loading}
-                  className="w-full bg-blue-500 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition disabled:opacity-50">
+            <Card>
+              <h2 style={{ color: G.ink, fontSize: 24, fontWeight: 500, letterSpacing: '-0.48px', marginBottom: 6 }}>부모님 로그인</h2>
+              <p style={{ color: G.graphite, fontSize: 14, marginBottom: 28 }}>이메일과 비밀번호를 입력하세요</p>
+              <form onSubmit={handleParentLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <input type="email" placeholder="이메일" value={email}
+                  onChange={e => setEmail(e.target.value)} style={inputStyle} />
+                <input type="password" placeholder="비밀번호" value={password}
+                  onChange={e => setPassword(e.target.value)} style={inputStyle} />
+                {error && <p style={{ color: '#e53e3e', fontSize: 13 }}>{error}</p>}
+                <button type="submit" disabled={loading} style={{ ...darkPill, justifyContent: 'center', marginTop: 4, opacity: loading ? 0.6 : 1 }}>
                   {loading ? '로그인 중...' : '로그인'}
                 </button>
               </form>
-              <div className="mt-3 flex flex-col gap-1.5 text-center text-sm">
-                <button onClick={() => { setView('forgot_password'); setError(''); setResetSent(false); }}
-                  className="text-gray-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 transition">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20, paddingTop: 20,
+                borderTop: '1px solid rgba(10,13,18,0.08)' }}>
+                <button onClick={() => go('forgot_password')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: G.fog, fontSize: 13, letterSpacing: '-0.01em' }}>
                   비밀번호를 잊으셨나요?
                 </button>
-                <button onClick={() => { setView('parent_setup'); setError(''); }}
-                  className="text-blue-500 dark:text-blue-400 hover:underline">
+                <button onClick={() => go('parent_setup')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: G.iris, fontSize: 13, fontWeight: 500, letterSpacing: '-0.01em' }}>
                   처음 사용하시나요? 계정 만들기 →
                 </button>
               </div>
-            </div>
+            </Card>
           )}
 
-          {/* 비밀번호 재설정 */}
-          {view === 'forgot_password' && (
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl dark:shadow-slate-900/50 p-6 animate-fade-in border dark:border-slate-700 transition-colors duration-300">
-              <button onClick={() => { setView('parent_login'); setError(''); setResetSent(false); }}
-                className="text-gray-400 dark:text-slate-500 mb-4 hover:text-gray-600 dark:hover:text-slate-300 transition text-sm flex items-center gap-1">
-                ← 뒤로
-              </button>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1">비밀번호 재설정</h2>
-              <p className="text-gray-400 dark:text-slate-500 text-sm mb-4">
-                가입한 이메일을 입력하면 재설정 링크를 보내드려요
+          {/* ── 계정 만들기 ── */}
+          {view === 'parent_setup' && (
+            <Card>
+              <h2 style={{ color: G.ink, fontSize: 24, fontWeight: 500, letterSpacing: '-0.48px', marginBottom: 6 }}>계정 만들기</h2>
+              <p style={{ color: G.graphite, fontSize: 14, marginBottom: 28 }}>우리 가족 전용 학습 공간을 설정해요</p>
+              <form onSubmit={handleSetup} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <input type="text" placeholder="가족 이름 (예: 김씨 가족)" value={familyName}
+                  onChange={e => setFamilyName(e.target.value)} style={inputStyle} />
+                <input type="email" placeholder="부모님 이메일" value={email}
+                  onChange={e => setEmail(e.target.value)} style={inputStyle} />
+                <input type="password" placeholder="비밀번호 (6자 이상)" value={password}
+                  onChange={e => setPassword(e.target.value)} style={inputStyle} />
+                {error && <p style={{ color: '#e53e3e', fontSize: 13 }}>{error}</p>}
+                <button type="submit" disabled={loading} style={{ ...darkPill, justifyContent: 'center', marginTop: 4, opacity: loading ? 0.6 : 1 }}>
+                  {loading ? '생성 중...' : '가족 계정 만들기 🎉'}
+                </button>
+              </form>
+              <p style={{ color: G.fog, fontSize: 12, textAlign: 'center', marginTop: 16 }}>
+                {isSupabaseConfigured ? '데이터가 클라우드에 안전하게 저장됩니다 ☁️' : 'Supabase 설정 후 클라우드 저장 가능'}
               </p>
+            </Card>
+          )}
+
+          {/* ── 비밀번호 재설정 ── */}
+          {view === 'forgot_password' && (
+            <Card>
+              <h2 style={{ color: G.ink, fontSize: 24, fontWeight: 500, letterSpacing: '-0.48px', marginBottom: 6 }}>비밀번호 재설정</h2>
+              <p style={{ color: G.graphite, fontSize: 14, marginBottom: 28 }}>가입한 이메일로 재설정 링크를 보내드려요</p>
               {resetSent ? (
-                <div className="text-center py-6">
-                  <p className="text-4xl mb-3">📬</p>
-                  <p className="font-bold text-gray-800 dark:text-white mb-1">이메일을 보냈어요!</p>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">
-                    <span className="font-medium text-blue-500">{email}</span>으로<br />
-                    재설정 링크를 전송했습니다.<br />
-                    받은 편지함을 확인해 주세요.
+                <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                  <p style={{ fontSize: 48, marginBottom: 16 }}>📬</p>
+                  <p style={{ color: G.ink, fontWeight: 500, fontSize: 16, marginBottom: 8 }}>이메일을 보냈어요!</p>
+                  <p style={{ color: G.graphite, fontSize: 13, lineHeight: 1.6 }}>
+                    <span style={{ color: G.iris, fontWeight: 500 }}>{email}</span>으로<br />재설정 링크를 전송했습니다.
                   </p>
-                  <button onClick={() => { setView('parent_login'); setResetSent(false); }}
-                    className="mt-5 text-sm text-blue-500 dark:text-blue-400 hover:underline">
-                    로그인 화면으로 돌아가기
+                  <button onClick={() => go('parent_login')} style={{ ...ghostPill, marginTop: 24, padding: '10px 24px', fontSize: 13 }}>
+                    로그인으로 돌아가기
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleForgotPassword} className="space-y-3">
+                <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <input type="email" placeholder="가입한 이메일" value={email}
-                    onChange={e => setEmail(e.target.value)} className={inputCls} />
-                  {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
-                  <button type="submit" disabled={loading}
-                    className="w-full bg-blue-500 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition disabled:opacity-50">
+                    onChange={e => setEmail(e.target.value)} style={inputStyle} />
+                  {error && <p style={{ color: '#e53e3e', fontSize: 13 }}>{error}</p>}
+                  <button type="submit" disabled={loading} style={{ ...darkPill, justifyContent: 'center', marginTop: 4, opacity: loading ? 0.6 : 1 }}>
                     {loading ? '전송 중...' : '재설정 링크 보내기'}
                   </button>
                 </form>
               )}
-            </div>
-          )}
-
-          {/* 첫 계정 생성 */}
-          {view === 'parent_setup' && (
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl dark:shadow-slate-900/50 p-6 animate-fade-in border dark:border-slate-700 transition-colors duration-300">
-              <button onClick={() => { setView('parent_login'); setError(''); }}
-                className="text-gray-400 dark:text-slate-500 mb-4 hover:text-gray-600 dark:hover:text-slate-300 transition text-sm flex items-center gap-1">
-                ← 뒤로
-              </button>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1">계정 만들기</h2>
-              <p className="text-gray-400 dark:text-slate-500 text-sm mb-4">우리 가족 전용 계정을 설정해요</p>
-              <form onSubmit={handleSetup} className="space-y-3">
-                <input type="text" placeholder="가족 이름 (예: 김씨 가족)" value={familyName} onChange={e => setFamilyName(e.target.value)} className={inputCls} />
-                <input type="email" placeholder="부모님 이메일" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-                <input type="password" placeholder="비밀번호 (6자 이상)" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} />
-                {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
-                <button type="submit" disabled={loading}
-                  className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition disabled:opacity-50">
-                  {loading ? '생성 중...' : '가족 계정 만들기 🎉'}
-                </button>
-              </form>
-              <p className="text-xs text-gray-400 dark:text-slate-500 mt-3 text-center">
-                {isSupabaseConfigured ? '데이터가 클라우드에 저장됩니다 ☁️' : 'Supabase 설정 후 클라우드 저장 가능'}
-              </p>
-            </div>
+            </Card>
           )}
         </div>
       </div>
+    );
+  }
+
+  // ── Landing page ─────────────────────────────────────────────
+  return (
+    <div style={{ backgroundColor: G.canvas, minHeight: '100vh',
+      fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
+
+      {/* Nav */}
+      <nav style={{ position: 'sticky', top: 0, zIndex: 50,
+        backgroundColor: 'rgba(235,245,255,0.85)', backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(0,105,224,0.08)', padding: '0 24px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', height: 60,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 22 }}>📖</span>
+            <span style={{ color: G.ink, fontWeight: 600, fontSize: 16, letterSpacing: '-0.01em' }}>공부 플래너</span>
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button onClick={() => navigate('/child')} style={{ ...ghostPill, padding: '8px 18px', fontSize: 13 }}>
+              자녀 로그인
+            </button>
+            <button onClick={() => go('parent_login')} style={{ ...darkPill, padding: '9px 20px', fontSize: 13 }}>
+              부모님 로그인
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section style={{ textAlign: 'center', padding: '80px 24px 64px', maxWidth: 860, margin: '0 auto' }}>
+        <div style={{ fontSize: 72, marginBottom: 24, display: 'block' }}>📚</div>
+        <h1 style={{ color: G.ink, fontWeight: 500, lineHeight: 1.1, letterSpacing: '-1.44px',
+          fontSize: 'clamp(40px, 8vw, 72px)', marginBottom: 24, margin: '0 auto 24px' }}>
+          가족이 함께<br />만드는 학습 습관
+        </h1>
+        <p style={{ color: G.graphite, fontSize: 18, lineHeight: 1.6, letterSpacing: '-0.18px',
+          marginBottom: 48, maxWidth: 520, margin: '0 auto 48px' }}>
+          공부 노트 사진 한 장이면 충분해요.<br />
+          AI가 내용을 분석하고, 부모님께 실시간으로 알려드려요.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+          <button onClick={() => go('parent_login')} style={darkPill}>
+            부모님으로 시작하기
+          </button>
+          <button onClick={() => navigate('/child')} style={ghostPill}>
+            자녀로 로그인
+          </button>
+        </div>
+      </section>
+
+      {/* Feature tiles */}
+      <section style={{ padding: '0 24px 80px', maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          {FEATURES.map(f => (
+            <div key={f.title} style={{ backgroundColor: f.bg, borderRadius: 32, padding: 32 }}>
+              <div style={{ fontSize: 36, marginBottom: 16 }}>{f.icon}</div>
+              <p style={{ color: G.ink, fontWeight: 500, fontSize: 16, letterSpacing: '-0.01em', marginBottom: 8 }}>{f.title}</p>
+              <p style={{ color: G.graphite, fontSize: 14, lineHeight: 1.6 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Demo section */}
+      <section style={{ padding: '0 24px 100px', maxWidth: 560, margin: '0 auto' }}>
+        <div style={{ backgroundColor: G.card, borderRadius: 32, padding: 40,
+          boxShadow: 'rgba(4,69,144,0.08) 0 14px 20px 4px' }}>
+          <p style={{ color: G.fog, fontSize: 12, fontWeight: 500, letterSpacing: '0.04em',
+            textTransform: 'uppercase', marginBottom: 8 }}>✨ 데모 체험</p>
+          <p style={{ color: G.ink, fontSize: 18, fontWeight: 500, letterSpacing: '-0.01em', marginBottom: 24 }}>
+            가짜 데이터로 바로 체험해보세요
+          </p>
+
+          <button
+            onClick={() => loginAsParent('parent@example.com', 'password123').then(() => navigate('/parent'))}
+            style={{ ...darkPill, justifyContent: 'center', width: '100%', boxSizing: 'border-box', marginBottom: 12 }}>
+            👨‍👩‍👧 부모님 계정 체험 →
+          </button>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {DEMO_CHILDREN.map(c => (
+              <button key={c.id} onClick={() => navigate(`/child/pin/${c.id}`)}
+                style={{ backgroundColor: G.canvas, border: '1.5px solid rgba(10,13,18,0.08)',
+                  borderRadius: 16, padding: '14px 12px', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 28 }}>{c.avatar}</span>
+                <span style={{ color: G.ink, fontSize: 14, fontWeight: 500 }}>{c.name}</span>
+                <span style={{ color: G.fog, fontSize: 12 }}>{c.grade} · PIN {c.pin}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ borderTop: '1px solid rgba(10,13,18,0.06)', padding: '32px 24px', textAlign: 'center' }}>
+        <p style={{ color: G.fog, fontSize: 13 }}>
+          © 2026 공부 플래너 — 가족이 함께 만드는 학습 습관
+        </p>
+      </footer>
     </div>
   );
 }
