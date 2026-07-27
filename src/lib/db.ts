@@ -101,13 +101,14 @@ export async function getChildren(familyId: string): Promise<Child[]> {
     id: row.id, family_id: row.family_id,
     name: row.name, grade: row.grade, pin: row.pin,
     avatar: row.avatar, active: row.active,
+    coins: row.coins ?? 0,
     created_at: row.created_at,
   }));
 }
 
 export async function createChild(
   familyId: string,
-  child: Omit<Child, 'id' | 'family_id' | 'created_at' | 'active'>,
+  child: Omit<Child, 'id' | 'family_id' | 'created_at' | 'active' | 'coins'>,
 ): Promise<Child | null> {
   const { data, error } = await supabase
     .from('children')

@@ -33,6 +33,10 @@ export default function Children() {
   const [progress, setProgress]         = useState<Record<string, number>>({});
   const [form, setForm]                 = useState({ name: '', grade: '초5', pin: '', avatar: '🐶' });
   const [tbForm, setTbForm]             = useState({ subject: '', name: '', total_pages: 0 });
+  const [settleChild, setSettleChild]   = useState<Child | null>(null);
+  const [settleAmount, setSettleAmount] = useState(500);
+  const [settling, setSettling]         = useState(false);
+  const [settleError, setSettleError]   = useState('');
 
   const loadChildren = useCallback(async () => {
     setLoading(true);
@@ -88,7 +92,7 @@ export default function Children() {
         id: editingChild?.id ?? `child-${Date.now()}`,
         family_id: family.id,
         name: form.name, grade: form.grade, pin: form.pin, avatar: form.avatar,
-        active: true, created_at: editingChild?.created_at ?? new Date().toISOString(),
+        active: true, coins: editingChild?.coins ?? 0, created_at: editingChild?.created_at ?? new Date().toISOString(),
       };
       localSaveChild(child);
     }
@@ -134,6 +138,31 @@ export default function Children() {
       localDeleteTextbook(tbId);
     }
     await loadBooksForChild(childId);
+  };
+
+  const handleSettle = async () => {
+    if (!settleChild || settleAmount <= 0 || isDemo) return;
+    setSettling(true); setSettleError('');
+    try {
+      const res = await fetch('/api/coins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'settle',
+          childId: settleChild.id,
+          familyId: family?.id,
+          amount: settleAmount,
+          note: `${settleAmount}코인 정산`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setSettleError(data.error ?? '정산 실패'); }
+      else {
+        setSettleChild(null);
+        await loadChildren();
+      }
+    } catch { setSettleError('네트워크 오류'); }
+    setSettling(false);
   };
 
   const getChildBooks = (childId: string): Textbook[] => {
@@ -209,10 +238,20 @@ export default function Children() {
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-800 dark:text-white">{child.name}</p>
                 <p className="text-gray-400 dark:text-slate-500 text-sm">{child.grade} · PIN: {'●'.repeat(child.pin.length)}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="text-sm">🪙</span>
+                  <span className="text-sm font-extrabold text-amber-500 dark:text-amber-400">{child.coins ?? 0}</span>
+                  <span className="text-xs text-gray-400 dark:text-slate-500">코인</span>
+                </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 {!isDemo && (
                   <>
+                    <button
+                      onClick={() => { setSettleChild(child); setSettleAmount(500); setSettleError(''); }}
+                      className="text-xs text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-1.5 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition font-bold">
+                      🪙 정산
+                    </button>
                     <button onClick={() => openEdit(child)}
                       className="text-xs text-gray-400 dark:text-slate-400 border dark:border-slate-600 rounded-lg px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                       수정
@@ -356,6 +395,60 @@ export default function Children() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 코인 정산 모달 */}
+      {settleChild && (
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-xs p-6 border dark:border-slate-700">
+            <div className="text-center mb-5">
+              <span className="text-5xl">🪙</span>
+              <h3 className="font-extrabold text-gray-800 dark:text-white mt-2">코인 정산</h3>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                {settleChild.avatar} {settleChild.name} · 현재{' '}
+                <span className="font-bold text-amber-500">{settleChild.coins ?? 0}코인</span>
+              </p>
+            </div>
+
+            {/* 빠른 선택 */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {[100, 300, 500].map(v => (
+                <button key={v} onClick={() => setSettleAmount(v)}
+                  className={`py-2 rounded-xl text-sm font-bold transition ${
+                    settleAmount === v
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-700'
+                  }`}>
+                  {v}
+                </button>
+              ))}
+            </div>
+
+            <input
+              type="number" min={1} max={settleChild.coins ?? 0}
+              value={settleAmount}
+              onChange={e => setSettleAmount(Number(e.target.value))}
+              className="w-full border dark:border-slate-600 rounded-xl px-4 py-2.5 text-center text-lg font-bold mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white dark:bg-slate-700 text-gray-800 dark:text-white transition-colors"
+              placeholder="코인 수"
+            />
+
+            {settleError && <p className="text-red-500 text-sm text-center mb-3">{settleError}</p>}
+
+            <div className="flex gap-2">
+              <button onClick={handleSettle} disabled={settling || settleAmount <= 0 || settleAmount > (settleChild.coins ?? 0)}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white py-3 rounded-xl font-extrabold transition">
+                {settling ? '정산 중...' : `${settleAmount}코인 차감`}
+              </button>
+              <button onClick={() => setSettleChild(null)}
+                className="px-5 border dark:border-slate-600 rounded-xl text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                취소
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-3">
+              정산 후 잔액: {Math.max(0, (settleChild.coins ?? 0) - settleAmount)}코인
+            </p>
           </div>
         </div>
       )}

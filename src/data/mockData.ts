@@ -11,8 +11,8 @@ export const MOCK_PARENT: ParentUser = {
 };
 
 export const MOCK_CHILDREN: Child[] = [
-  { id: 'child-001', family_id: 'family-001', name: '민준', grade: '초5', pin: '1234', avatar: '🐶', active: true, created_at: '2024-01-01' },
-  { id: 'child-002', family_id: 'family-001', name: '서연', grade: '초3', pin: '5678', avatar: '🦊', active: true, created_at: '2024-01-01' },
+  { id: 'child-001', family_id: 'family-001', name: '민준', grade: '초5', pin: '1234', avatar: '🐶', active: true, coins: 150, created_at: '2024-01-01' },
+  { id: 'child-002', family_id: 'family-001', name: '서연', grade: '초3', pin: '5678', avatar: '🦊', active: true, coins: 300, created_at: '2024-01-01' },
 ];
 
 export const MOCK_TEXTBOOKS: Textbook[] = [

@@ -13,6 +13,7 @@ export interface Child {
   pin: string;
   avatar: string;
   active: boolean;
+  coins: number;
   created_at: string;
 }
 

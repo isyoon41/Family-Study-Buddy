@@ -150,6 +150,13 @@ export default function ChildUpload() {
         items,
       });
 
+      // 주간 코인 지급 체크 (fire-and-forget)
+      fetch('/api/coins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'award', childId: child?.id, familyId: family?.id, date }),
+      }).catch(() => {});
+
       // 부모 이메일 알림 (fire-and-forget — 실패해도 제출은 완료)
       fetch('/api/notify', {
         method: 'POST',

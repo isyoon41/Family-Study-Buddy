@@ -237,11 +237,12 @@ export default function ChildDashboard() {
       <div className="max-w-md mx-auto px-4 -mt-16 pb-10 space-y-4">
 
         {/* 통계 카드 (히어로 위에 겹침) */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-4 grid grid-cols-3 gap-2 animate-pop-in">
+        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-4 grid grid-cols-4 gap-2 animate-pop-in">
           {[
             { icon: '⭐', value: approved.length, label: '칭찬 받은 날' },
             { icon: '🔥', value: `${streak}일`,  label: '연속 달성' },
             { icon: '⏱',  value: `${totalHours}h`, label: '총 공부' },
+            { icon: '🪙', value: child?.coins ?? 0, label: '보상 코인' },
           ].map((s, i) => (
             <div key={i} className="flex flex-col items-center py-2">
               <span className="text-2xl mb-1">{s.icon}</span>
@@ -249,6 +250,16 @@ export default function ChildDashboard() {
               <p className="text-xs text-gray-400 dark:text-slate-400">{s.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* 코인 안내 배너 */}
+        <div className="bg-gradient-to-r from-yellow-400 to-amber-400 dark:from-yellow-600 dark:to-amber-600 rounded-2xl p-3 flex items-center gap-3">
+          <span className="text-2xl">🪙</span>
+          <div className="flex-1">
+            <p className="text-white font-bold text-xs">주간 미션</p>
+            <p className="text-white/90 text-xs">5일 공부 → 100코인 · 6일 공부 → 300코인</p>
+          </div>
+          <p className="text-white font-extrabold text-lg">{child?.coins ?? 0}</p>
         </div>
 
         {/* 뱃지 섹션 */}

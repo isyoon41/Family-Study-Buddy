@@ -6,9 +6,7 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "crons": [
-    {
-      "path": "/api/ping",
-      "schedule": "0 12 * * *"
-    }
+    { "path": "/api/ping",   "schedule": "0 12 * * *" },
+    { "path": "/api/remind", "schedule": "0 0 * * *" }
   ]
 }
