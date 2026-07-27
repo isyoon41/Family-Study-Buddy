@@ -5,159 +5,284 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 import { getChildStudyLogs } from '../../lib/db';
 import type { StudyLog } from '../../types';
 
-// ── 색상 팔레트 (책 표지용) ──────────────────────────────────
+// ── Color palettes for book spines ──────────────────────────────
 const PALETTES: [string, string][] = [
-  ['#f472b6', '#db2777'], ['#fb923c', '#ea580c'], ['#34d399', '#059669'],
-  ['#60a5fa', '#2563eb'], ['#a78bfa', '#7c3aed'], ['#fbbf24', '#d97706'],
-  ['#f87171', '#dc2626'], ['#2dd4bf', '#0d9488'], ['#818cf8', '#4f46e5'],
-  ['#4ade80', '#16a34a'], ['#c084fc', '#9333ea'], ['#38bdf8', '#0284c7'],
+  ['#f472b6', '#be185d'], ['#fb923c', '#c2410c'], ['#34d399', '#047857'],
+  ['#60a5fa', '#1d4ed8'], ['#a78bfa', '#6d28d9'], ['#fbbf24', '#b45309'],
+  ['#f87171', '#b91c1c'], ['#2dd4bf', '#0f766e'], ['#818cf8', '#3730a3'],
+  ['#4ade80', '#15803d'], ['#c084fc', '#7e22ce'], ['#38bdf8', '#0369a1'],
 ];
-
-function coverColors(title: string): [string, string] {
+function spineColors(title: string): [string, string] {
   let h = 0;
   for (let i = 0; i < title.length; i++) h = (h * 31 + title.charCodeAt(i)) | 0;
   return PALETTES[Math.abs(h) % PALETTES.length];
 }
+function spineHeight(title: string): number {
+  let h = 0;
+  for (let i = 0; i < title.length; i++) h = (h * 17 + title.charCodeAt(i)) | 0;
+  return 110 + (Math.abs(h) % 52); // 110–162px
+}
 
 const MONTH_KO = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+// Folder colors cycle
+const FOLDER_COLORS = [
+  { bg: '#efffdc', border: '#b8e890', icon: '#58CC02', label: '#2d6a00' },
+  { bg: '#e8f7ff', border: '#b8d8ff', icon: '#1CB0F6', label: '#035d8a' },
+  { bg: '#fff9e0', border: '#ffe58a', icon: '#FFD900', label: '#8C6900' },
+  { bg: '#f5eaff', border: '#dbb8ff', icon: '#CE82FF', label: '#6B21A8' },
+  { bg: '#ffe8d6', border: '#ffb890', icon: '#FF8C42', label: '#8B3A00' },
+  { bg: '#dcfce7', border: '#86efac', icon: '#22C55E', label: '#14532D' },
+];
 
 interface BookEntry { title: string; date: string; completed: boolean; }
 interface MonthGroup { year: number; month: number; books: BookEntry[]; }
 
-// ── 캔버스 유틸 ────────────────────────────────────────────
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number, r: number,
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
+// ── Canvas download (keep same function) ─────────────────────────
 function wrapText(
-  ctx: CanvasRenderingContext2D,
-  text: string, cx: number, startY: number, maxW: number, lineH: number,
+  ctx: CanvasRenderingContext2D, text: string, cx: number,
+  startY: number, maxW: number, lineH: number,
 ): number {
-  let line = '';
-  let y = startY;
+  let line = ''; let y = startY;
   for (const ch of text) {
     const test = line + ch;
-    if (ctx.measureText(test).width > maxW && line) {
-      ctx.fillText(line, cx, y);
-      line = ch; y += lineH;
-    } else { line = test; }
+    if (ctx.measureText(test).width > maxW) {
+      ctx.fillText(line, cx, y); line = ch; y += lineH;
+    } else line = test;
   }
   if (line) ctx.fillText(line, cx, y);
   return y;
 }
-
-// ── 월별 컬렉션 이미지 렌더링 ────────────────────────────────
-function renderToCanvas(
+function renderCanvas(
   canvas: HTMLCanvasElement,
   { childName, childAvatar, year, month, books }: {
     childName: string; childAvatar: string;
     year: number; month: number; books: BookEntry[];
   },
 ) {
-  const COLS = 3;
-  const CW = 230, CH = 195, GAP = 20, PAD = 55;
+  const COLS = 3, CW = 230, CH = 195, GAP = 20, PAD = 55;
   const rows = Math.ceil(books.length / COLS);
   const W = COLS * CW + (COLS - 1) * GAP + PAD * 2;
   const H = 240 + rows * (CH + GAP) + 80;
   canvas.width = W; canvas.height = H;
-
   const ctx = canvas.getContext('2d')!;
-  const KO_FONT = `"Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif`;
+  const KO = `"Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
 
-  // 배경
   const bg = ctx.createLinearGradient(0, 0, W, H);
   bg.addColorStop(0, '#fffbf0'); bg.addColorStop(1, '#fef3e2');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
-  // 상단 스트라이프
   const stripe = ctx.createLinearGradient(0, 0, W, 0);
-  stripe.addColorStop(0, '#f59e0b'); stripe.addColorStop(1, '#d97706');
+  stripe.addColorStop(0, '#58CC02'); stripe.addColorStop(1, '#4DA700');
   ctx.fillStyle = stripe; ctx.fillRect(0, 0, W, 7);
 
-  // 헤더
   ctx.textAlign = 'center';
   ctx.font = `52px serif`; ctx.fillStyle = '#000';
   ctx.fillText(childAvatar, W / 2, 82);
-
-  ctx.font = `bold 30px ${KO_FONT}`; ctx.fillStyle = '#78350f';
+  ctx.font = `bold 30px ${KO}`; ctx.fillStyle = '#1C1C1E';
   ctx.fillText(`${year}년 ${MONTH_KO[month - 1]}의 독서 컬렉션`, W / 2, 130);
-
-  ctx.font = `18px ${KO_FONT}`; ctx.fillStyle = '#a16207';
+  ctx.font = `18px ${KO}`; ctx.fillStyle = '#4B4B4B';
   ctx.fillText(`${childName} · 총 ${books.length}권`, W / 2, 162);
-
-  ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#e5e5e5'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(PAD, 185); ctx.lineTo(W - PAD, 185); ctx.stroke();
 
-  // 책 카드
-  const startX = PAD;
+  function roundRect2(x: number, y: number, w: number, h: number, r: number) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
   books.forEach((book, i) => {
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
-    const x = startX + col * (CW + GAP);
-    const y = 205 + row * (CH + GAP);
+    const col = i % COLS, row = Math.floor(i / COLS);
+    const x = PAD + col * (CW + GAP), y = 205 + row * (CH + GAP);
     const cx = x + CW / 2;
-    const [c1, c2] = coverColors(book.title);
-
-    // 그림자
-    ctx.fillStyle = 'rgba(0,0,0,0.07)';
-    roundRect(ctx, x + 3, y + 3, CW, CH, 14); ctx.fill();
-
-    // 카드 배경
+    const [c1, c2] = spineColors(book.title);
+    ctx.fillStyle = 'rgba(0,0,0,.07)'; roundRect2(x + 3, y + 3, CW, CH, 14); ctx.fill();
     const grad = ctx.createLinearGradient(x, y, x + CW, y + CH);
     grad.addColorStop(0, c1); grad.addColorStop(1, c2);
-    ctx.fillStyle = grad;
-    roundRect(ctx, x, y, CW, CH, 14); ctx.fill();
-
-    // 책 아이콘
-    ctx.font = '36px serif'; ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillStyle = grad; roundRect2(x, y, CW, CH, 14); ctx.fill();
+    ctx.font = '36px serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,.9)';
     ctx.fillText('📖', cx, y + 48);
-
-    // 제목
-    ctx.font = `bold 16px ${KO_FONT}`;
-    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.font = `bold 16px ${KO}`; ctx.fillStyle = 'rgba(255,255,255,.96)';
     wrapText(ctx, book.title, cx, y + 78, CW - 28, 21);
-
-    // 날짜
-    ctx.font = `13px ${KO_FONT}`; ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.font = `13px ${KO}`; ctx.fillStyle = 'rgba(255,255,255,.65)';
     ctx.fillText(book.date, cx, y + CH - 14);
-
-    // 완료 체크
-    if (book.completed) {
-      ctx.font = '14px serif'; ctx.textAlign = 'right';
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.fillText('✅', x + CW - 10, y + 22);
-      ctx.textAlign = 'center';
-    }
+    if (book.completed) { ctx.font = '14px serif'; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillText('✅', x + CW - 10, y + 22); ctx.textAlign = 'center'; }
   });
-
-  // 푸터
-  const footerY = 205 + rows * (CH + GAP) + 12;
-  ctx.font = `15px ${KO_FONT}`; ctx.fillStyle = '#b45309';
-  ctx.textAlign = 'center';
-  ctx.fillText('📖 공부 플래너 · 독서 컬렉션', W / 2, footerY + 30);
+  const fy = 205 + rows * (CH + GAP) + 12;
+  ctx.font = `15px ${KO}`; ctx.fillStyle = '#4B4B4B'; ctx.textAlign = 'center';
+  ctx.fillText('📖 공부 플래너 · 독서 컬렉션', W / 2, fy + 30);
 }
 
-// ── 메인 컴포넌트 ─────────────────────────────────────────────
+// ── Book Spine component ─────────────────────────────────────────
+function BookSpine({ book, index }: { book: BookEntry; index: number }) {
+  const [c1, c2] = spineColors(book.title);
+  const h = spineHeight(book.title);
+  return (
+    <div
+      title={book.title}
+      style={{
+        width: 46, height: h, flexShrink: 0,
+        background: `linear-gradient(180deg, ${c1} 0%, ${c2} 100%)`,
+        borderRadius: '5px 5px 0 0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'relative', cursor: 'default',
+        boxShadow: '2px 0 6px rgba(0,0,0,.18), inset -2px 0 4px rgba(0,0,0,.1)',
+        animation: `spine-in .45s ${index * 0.055}s cubic-bezier(.34,1.56,.64,1) both`,
+        transformOrigin: 'bottom center',
+      }}>
+      {/* Spine title (vertical) */}
+      <span style={{
+        writingMode: 'vertical-rl', textOrientation: 'mixed',
+        transform: 'rotate(180deg)',
+        color: 'rgba(255,255,255,.95)', fontSize: 10, fontWeight: 700,
+        lineHeight: 1.2, padding: '6px 3px',
+        overflow: 'hidden', maxHeight: h - 20,
+        textShadow: '0 1px 3px rgba(0,0,0,.4)',
+        display: '-webkit-box', WebkitLineClamp: 999, WebkitBoxOrient: 'vertical',
+        userSelect: 'none',
+        fontFamily: '"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif',
+      }}>
+        {book.title}
+      </span>
+      {/* Completed dot */}
+      {book.completed && (
+        <span style={{ position: 'absolute', top: 5, left: '50%', transform: 'translateX(-50%)',
+          fontSize: 8 }}>⭐</span>
+      )}
+    </div>
+  );
+}
+
+// ── Bookshelf section ────────────────────────────────────────────
+function Bookshelf({ books, isVisible }: { books: BookEntry[]; isVisible: boolean }) {
+  if (!isVisible) return null;
+  return (
+    <div style={{ animation: 'shelf-reveal .3s cubic-bezier(.16,1,.3,1) both' }}>
+      {/* Scrollable spine track */}
+      <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', gap: 5,
+          padding: '28px 20px 0 20px', minWidth: 'max-content',
+        }}>
+          {books.map((book, i) => (
+            <BookSpine key={book.title} book={book} index={i} />
+          ))}
+        </div>
+        {/* Wooden shelf */}
+        <div style={{
+          height: 20, marginLeft: 20,
+          width: books.length * 51,
+          minWidth: 'calc(100% - 40px)',
+          background: 'linear-gradient(180deg, #c8960c 0%, #a87832 50%, #7a5520 100%)',
+          boxShadow: '0 6px 16px rgba(0,0,0,.25), inset 0 2px 4px rgba(255,255,255,.2)',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Month Folder ─────────────────────────────────────────────────
+function MonthFolder({
+  group, colorIdx, isOpen, onToggle, onDownload, downloading,
+}: {
+  group: MonthGroup; colorIdx: number; isOpen: boolean;
+  onToggle: () => void; onDownload: () => void; downloading: boolean;
+}) {
+  const c = FOLDER_COLORS[colorIdx % FOLDER_COLORS.length];
+  return (
+    <div style={{ borderRadius: 20, overflow: 'hidden',
+      border: `2px solid ${isOpen ? c.icon : c.border}`,
+      transition: 'border-color .2s',
+      boxShadow: isOpen ? `0 4px 20px ${c.icon}22` : 'none' }}>
+
+      {/* Folder header */}
+      <button onClick={onToggle}
+        style={{ width: '100%', padding: '18px 20px',
+          background: isOpen ? c.bg : 'white',
+          display: 'flex', alignItems: 'center', gap: 14,
+          border: 'none', cursor: 'pointer', textAlign: 'left',
+          fontFamily: '"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif',
+          transition: 'background .2s' }}>
+
+        {/* Folder icon + month */}
+        <div style={{ width: 48, height: 48, borderRadius: 14,
+          backgroundColor: isOpen ? c.icon : c.border,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 24, flexShrink: 0, transition: 'background .2s',
+          boxShadow: isOpen ? `0 3px 0 ${c.icon}88` : 'none' }}>
+          {isOpen ? '📂' : '📁'}
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 17, fontWeight: 800, color: isOpen ? c.label : '#1C1C1E',
+            letterSpacing: '-.02em', lineHeight: 1.2,
+            fontFamily: 'inherit' }}>
+            {group.year}년 {MONTH_KO[group.month - 1]}
+          </p>
+          <p style={{ fontSize: 13, color: '#AFAFAF', fontWeight: 600, marginTop: 2 }}>
+            📚 {group.books.length}권 읽음
+          </p>
+        </div>
+
+        {/* Book count badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ backgroundColor: isOpen ? c.icon : c.border,
+            color: isOpen ? '#fff' : c.label,
+            borderRadius: 9999, padding: '4px 12px',
+            fontSize: 13, fontWeight: 700,
+            transition: 'all .2s' }}>
+            {group.books.length}권
+          </span>
+          <span style={{ color: '#AFAFAF', fontSize: 18, transition: 'transform .3s',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', display: 'block' }}>
+            ▾
+          </span>
+        </div>
+      </button>
+
+      {/* Bookshelf (animated) */}
+      {isOpen && (
+        <div style={{ backgroundColor: '#fafafa', borderTop: `2px solid ${c.border}` }}>
+          <Bookshelf books={group.books} isVisible={isOpen} />
+
+          {/* Action bar */}
+          <div style={{ padding: '14px 20px', display: 'flex',
+            justifyContent: 'space-between', alignItems: 'center' }}>
+            <p style={{ fontSize: 12, color: '#AFAFAF', fontWeight: 600 }}>
+              가장 최근: {group.books[group.books.length - 1]?.date.slice(5).replace('-', '/')}
+            </p>
+            <button onClick={e => { e.stopPropagation(); onDownload(); }}
+              disabled={downloading}
+              style={{ display: 'flex', alignItems: 'center', gap: 7,
+                backgroundColor: downloading ? '#AFAFAF' : c.icon,
+                color: '#fff', border: 'none',
+                borderBottom: `3px solid ${downloading ? '#999' : c.label}`,
+                borderRadius: 12, padding: '9px 18px',
+                fontSize: 13, fontWeight: 700, cursor: downloading ? 'default' : 'pointer',
+                letterSpacing: '.03em', fontFamily: 'inherit' }}>
+              {downloading ? '⏳ 저장 중...' : '💾 이미지 저장'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────
 export default function ChildBooks() {
-  const navigate = useNavigate();
-  const { child } = useAuth();
-  const [logs, setLogs]           = useState<StudyLog[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [activeYear, setActiveYear] = useState<number | null>(null);
+  const navigate   = useNavigate();
+  const { child }  = useAuth();
+  const [logs, setLogs]       = useState<StudyLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -178,13 +303,13 @@ export default function ChildBooks() {
       const [y, m] = log.date.split('-').map(Number);
       const key = `${y}-${String(m).padStart(2, '0')}`;
       if (!map.has(key)) map.set(key, { year: y, month: m, books: [], seen: new Set() });
-      const group = map.get(key)!;
+      const g = map.get(key)!;
       for (const item of log.items) {
         if (item.subject !== '독서' || !item.task_text.trim()) continue;
         const title = item.task_text.trim();
-        if (group.seen.has(title)) continue;
-        group.seen.add(title);
-        group.books.push({ title, date: log.date, completed: item.completed });
+        if (g.seen.has(title)) continue;
+        g.seen.add(title);
+        g.books.push({ title, date: log.date, completed: item.completed });
       }
     }
     return [...map.values()]
@@ -192,31 +317,20 @@ export default function ChildBooks() {
       .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
   }, [logs]);
 
-  const years = useMemo(
-    () => [...new Set(monthGroups.map(g => g.year))].sort((a, b) => b - a),
-    [monthGroups],
-  );
-
-  useEffect(() => {
-    if (years.length > 0 && activeYear === null) setActiveYear(years[0]);
-  }, [years, activeYear]);
-
-  const visibleGroups = monthGroups.filter(g => g.year === activeYear);
   const totalBooks = useMemo(
     () => new Set(monthGroups.flatMap(g => g.books.map(b => b.title))).size,
     [monthGroups],
   );
 
-  const downloadMonth = (group: MonthGroup) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const handleToggle = (key: string) => setOpenKey(p => p === key ? null : key);
+
+  const handleDownload = (group: MonthGroup) => {
+    const canvas = canvasRef.current; if (!canvas) return;
     const key = `${group.year}-${group.month}`;
     setDownloading(key);
-    renderToCanvas(canvas, {
-      childName: child?.name ?? '',
-      childAvatar: child?.avatar ?? '📚',
-      year: group.year, month: group.month,
-      books: group.books,
+    renderCanvas(canvas, {
+      childName: child?.name ?? '', childAvatar: child?.avatar ?? '📚',
+      year: group.year, month: group.month, books: group.books,
     });
     canvas.toBlob(blob => {
       if (!blob) { setDownloading(null); return; }
@@ -231,11 +345,12 @@ export default function ChildBooks() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-amber-50 dark:bg-slate-900">
-        <div className="flex gap-2">
-          {[0, 1, 2].map(i => (
-            <div key={i} className="w-3 h-3 bg-amber-400 rounded-full animate-bounce"
-              style={{ animationDelay: `${i * 0.2}s` }} />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', backgroundColor: '#f4fff0' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{ width: 12, height: 12, borderRadius: '50%',
+              backgroundColor: '#58CC02', animation: `bounce .8s ${i * .2}s infinite` }} />
           ))}
         </div>
       </div>
@@ -243,136 +358,82 @@ export default function ChildBooks() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 dark:from-slate-900 dark:to-slate-800 pb-20">
-      <canvas ref={canvasRef} className="hidden" />
+    <div style={{ minHeight: '100vh', backgroundColor: '#f4fff0',
+      fontFamily: '"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif' }}>
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-      {/* 헤더 */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-amber-100 dark:border-slate-700 px-4 py-3 flex items-center gap-3">
-        <button
-          onClick={() => navigate('/child/dashboard')}
-          className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-slate-700 flex items-center justify-center font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-slate-600 transition">
-          ←
-        </button>
-        <div className="flex-1">
-          <h1 className="font-extrabold text-gray-800 dark:text-white text-base leading-none">내 독서 컬렉션</h1>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
-            총 <span className="font-bold text-amber-600 dark:text-amber-400">{totalBooks}권</span>의 책을 읽었어요 📚
-          </p>
-        </div>
-        <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-slate-700 flex items-center justify-center text-2xl">
-          {child?.avatar}
+      {/* Keyframes */}
+      <style>{`
+        @keyframes spine-in {
+          0%   { opacity: 0; transform: scaleY(0) translateY(12px); }
+          70%  { transform: scaleY(1.08) translateY(-3px); }
+          100% { opacity: 1; transform: scaleY(1) translateY(0); }
+        }
+        @keyframes shelf-reveal {
+          from { opacity: 0; transform: translateY(-12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50%       { transform: translateY(-12px); }
+        }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10,
+        backgroundColor: 'rgba(244,255,240,.92)', backdropFilter: 'blur(12px)',
+        borderBottom: '2px solid #e5e5e5', padding: '0 16px' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', height: 56,
+          display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => navigate('/child/dashboard')}
+            style={{ width: 36, height: 36, borderRadius: 12,
+              backgroundColor: '#efffdc', border: '2px solid #b8e890',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 16, cursor: 'pointer', color: '#2d6a00', fontWeight: 700 }}>
+            ←
+          </button>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 16, fontWeight: 800, color: '#1C1C1E',
+              letterSpacing: '-.02em', lineHeight: 1 }}>내 독서 컬렉션</p>
+            <p style={{ fontSize: 12, color: '#AFAFAF', marginTop: 2 }}>
+              총 <span style={{ color: '#58CC02', fontWeight: 800 }}>{totalBooks}권</span> 읽음 · {monthGroups.length}개월
+            </p>
+          </div>
+          <div style={{ width: 38, height: 38, borderRadius: 12,
+            backgroundColor: '#efffdc', border: '2px solid #b8e890',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+            {child?.avatar}
+          </div>
         </div>
       </div>
 
-      <div className="px-4 pt-5 max-w-lg mx-auto">
+      {/* Content */}
+      <div style={{ maxWidth: 600, margin: '0 auto', padding: '20px 16px 80px' }}>
         {monthGroups.length === 0 ? (
-          <div className="text-center py-24">
-            <p className="text-7xl mb-5 animate-bounce inline-block">📚</p>
-            <p className="text-gray-600 dark:text-slate-300 font-bold text-lg">아직 읽은 책이 없어요</p>
-            <p className="text-gray-400 dark:text-slate-500 text-sm mt-2">
-              학습일지에 <span className="text-amber-600 font-bold">독서</span> 항목을 추가해 보세요!
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <p style={{ fontSize: 64, marginBottom: 20 }}>📚</p>
+            <p style={{ fontSize: 18, fontWeight: 800, color: '#1C1C1E' }}>아직 읽은 책이 없어요</p>
+            <p style={{ fontSize: 14, color: '#AFAFAF', marginTop: 8 }}>
+              학습일지에 <span style={{ color: '#58CC02', fontWeight: 700 }}>독서</span> 항목을 추가해 보세요!
             </p>
           </div>
         ) : (
-          <>
-            {/* 연도 탭 */}
-            {years.length > 1 && (
-              <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
-                {years.map(y => (
-                  <button key={y} onClick={() => setActiveYear(y)}
-                    className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition shadow-sm
-                      ${activeYear === y
-                        ? 'bg-amber-500 text-white shadow-amber-200 dark:shadow-amber-900'
-                        : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700'
-                      }`}>
-                    {y}년
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* 연간 통계 */}
-            {activeYear && (
-              <div className="bg-gradient-to-r from-amber-500 to-orange-400 rounded-3xl p-4 mb-5 text-white shadow-lg">
-                <p className="text-xs font-bold opacity-80 mb-1">{activeYear}년 독서 현황</p>
-                <div className="flex items-end gap-1">
-                  <p className="text-4xl font-extrabold">
-                    {new Set(
-                      monthGroups
-                        .filter(g => g.year === activeYear)
-                        .flatMap(g => g.books.map(b => b.title))
-                    ).size}
-                  </p>
-                  <p className="text-lg font-bold mb-1 opacity-90">권</p>
-                </div>
-                <p className="text-xs opacity-70 mt-0.5">
-                  {monthGroups.filter(g => g.year === activeYear).length}개월 동안 읽음
-                </p>
-              </div>
-            )}
-
-            {/* 월별 섹션 */}
-            <div className="space-y-5">
-              {visibleGroups.map(group => {
-                const key = `${group.year}-${group.month}`;
-                return (
-                  <div key={key}
-                    className="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden shadow-sm border border-amber-100 dark:border-slate-700">
-
-                    {/* 월 헤더 */}
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-amber-50 dark:border-slate-700">
-                      <div>
-                        <p className="font-extrabold text-gray-800 dark:text-white text-base">
-                          {MONTH_KO[group.month - 1]}
-                        </p>
-                        <p className="text-xs text-amber-600 dark:text-amber-400 font-bold mt-0.5">
-                          📚 {group.books.length}권 읽음
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => downloadMonth(group)}
-                        disabled={!!downloading}
-                        className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 dark:disabled:bg-slate-600
-                          text-white px-4 py-2 rounded-2xl text-xs font-bold transition shadow-sm active:scale-95">
-                        {downloading === key ? '⏳' : '💾'}
-                        {downloading === key ? '저장 중...' : '이미지 저장'}
-                      </button>
-                    </div>
-
-                    {/* 책 그리드 */}
-                    <div className="grid grid-cols-3 gap-3 p-4">
-                      {group.books.map(book => {
-                        const [c1, c2] = coverColors(book.title);
-                        return (
-                          <div key={book.title}
-                            className="rounded-2xl overflow-hidden shadow-sm flex flex-col">
-                            {/* 표지 영역 */}
-                            <div
-                              className="relative flex flex-col items-center justify-center px-2 pt-3 pb-2 flex-1"
-                              style={{ background: `linear-gradient(135deg, ${c1}, ${c2})`, minHeight: '88px' }}>
-                              <span className="text-2xl mb-1.5">📖</span>
-                              <p className="text-white font-bold text-center text-xs leading-tight line-clamp-3 px-1 break-words">
-                                {book.title}
-                              </p>
-                              {book.completed && (
-                                <span className="absolute top-1.5 right-1.5 text-xs">✅</span>
-                              )}
-                            </div>
-                            {/* 날짜 */}
-                            <div className="bg-white dark:bg-slate-700 px-2 py-1.5 text-center">
-                              <p className="text-xs text-gray-400 dark:text-slate-400 font-medium">
-                                {book.date.slice(5).replace('-', '/')}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {monthGroups.map((group, idx) => {
+              const key = `${group.year}-${group.month}`;
+              return (
+                <MonthFolder
+                  key={key}
+                  group={group}
+                  colorIdx={idx}
+                  isOpen={openKey === key}
+                  onToggle={() => handleToggle(key)}
+                  onDownload={() => handleDownload(group)}
+                  downloading={downloading === key}
+                />
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
