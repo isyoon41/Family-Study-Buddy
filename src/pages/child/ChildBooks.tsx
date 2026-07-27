@@ -140,12 +140,10 @@ function BookSpine({ book, index }: { book: BookEntry; index: number }) {
       {/* Spine title (vertical) */}
       <span style={{
         writingMode: 'vertical-rl', textOrientation: 'mixed',
-        transform: 'rotate(180deg)',
         color: 'rgba(255,255,255,.95)', fontSize: 10, fontWeight: 700,
         lineHeight: 1.2, padding: '6px 3px',
         overflow: 'hidden', maxHeight: h - 20,
         textShadow: '0 1px 3px rgba(0,0,0,.4)',
-        display: '-webkit-box', WebkitLineClamp: 999, WebkitBoxOrient: 'vertical',
         userSelect: 'none',
         fontFamily: '"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif',
       }}>
