@@ -196,11 +196,11 @@ export default function ParentDashboard() {
   const recentLogs   = [...allLogs].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5);
   const approvedLogs = allLogs.filter(l => l.status === 'approved');
 
-  const STAT_CARDS = [
-    { icon: '👶', label: '자녀 수',   value: childCount,     gradient: 'from-blue-400 to-blue-600',     to: '/parent/children' },
-    { icon: '⏳', label: '승인 대기', value: pending.length, gradient: 'from-amber-400 to-orange-400',  to: '/parent/schedule' },
-    { icon: '⭐', label: '승인 완료', value: approved,       gradient: 'from-green-400 to-emerald-500', to: null },
-    { icon: '📈', label: '승인율',   value: `${rate}%`,     gradient: 'from-purple-400 to-pink-500',   to: null },
+    const STAT_CARDS = [
+    { icon: '👶', label: '자녀 수',   value: childCount,     bg: '#DBEAFE', iconBg: '#BFDBFE', valColor: '#1E40AF', to: '/parent/children' },
+    { icon: '⏳', label: '승인 대기', value: pending.length, bg: '#FEF9C3', iconBg: '#FDE68A', valColor: '#854D0E', to: '/parent/schedule' },
+    { icon: '⭐', label: '승인 완료', value: approved,       bg: '#DCFCE7', iconBg: '#BBF7D0', valColor: '#166534', to: null },
+    { icon: '📈', label: '승인율',   value: `${rate}%`,     bg: '#F3E8FF', iconBg: '#E9D5FF', valColor: '#6B21A8', to: null },
   ];
 
   return (
@@ -231,13 +231,18 @@ export default function ParentDashboard() {
               <div
                 key={c.label}
                 onClick={() => c.to && navigate(c.to)}
-                style={{ animationDelay: `${i * 0.08}s`, animationFillMode: 'both', opacity: 0 }}
-                className={`bg-gradient-to-br ${c.gradient} rounded-[24px] p-4 text-white shadow-md animate-slide-up
-                  ${c.to ? 'cursor-pointer hover:opacity-90 active:scale-95 transition-transform' : ''}`}
+                style={{ backgroundColor: c.bg, borderRadius: 20,
+                  border: '2px solid rgba(0,0,0,.06)', padding: '20px 16px',
+                  cursor: c.to ? 'pointer' : 'default',
+                  transition: 'transform .15s', animationDelay: `${i * 0.08}s`,
+                  animationFillMode: 'both', opacity: 0 }}
+                className="animate-slide-up hover:scale-[1.02] active:scale-95"
               >
-                <div className="text-2xl mb-1">{c.icon}</div>
-                <p className="text-2xl font-bold">{c.value}</p>
-                <p className="text-white/80 text-xs">{c.label}</p>
+                <div style={{ width: 40, height: 40, borderRadius: 12,
+                  backgroundColor: c.iconBg, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: 20, marginBottom: 12 }}>{c.icon}</div>
+                <p style={{ fontSize: 26, fontWeight: 900, color: c.valColor, letterSpacing: '-.03em' }}>{c.value}</p>
+                <p style={{ fontSize: 12, fontWeight: 700, color: c.valColor, opacity: .7 }}>{c.label}</p>
               </div>
             ))}
           </div>
