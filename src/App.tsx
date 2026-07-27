@@ -14,6 +14,7 @@ import Schedule from './pages/parent/Schedule';
 import Reports from './pages/parent/Reports';
 import SecurityLog from './pages/parent/SecurityLog';
 import Settings from './pages/parent/Settings';
+import ResetPassword from './pages/ResetPassword';
 
 function ChildGuard({ children }: { children: React.ReactNode }) {
   const { role } = useAuth();
@@ -46,6 +47,7 @@ function AppRoutes() {
         <Route path="settings" element={<Settings />} />
       </Route>
 
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

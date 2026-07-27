@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const MINI_CARDS = [
   { bg: 'from-blue-500 to-purple-500', title: '자녀 대시보드', icon: '🐶', lines: ['민준 · 초5', '✅ 수학 p.112~120', '✅ 국어 독해 p.34~36', '⏳ 영어 단어 20개'] },
@@ -19,13 +19,26 @@ export default function Index() {
   const navigate = useNavigate();
   const { loginAsParent } = useAuth();
   const { dark, toggle } = useTheme();
-  const [view, setView] = useState<'landing' | 'parent_login' | 'parent_setup'>('landing');
+  const [view, setView] = useState<'landing' | 'parent_login' | 'parent_setup' | 'forgot_password'>('landing');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [familyName, setFamilyName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const { setupAccount } = useAuth();
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) { setError('이메일을 입력해주세요.'); return; }
+    setLoading(true); setError('');
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (err) setError(err.message);
+    else setResetSent(true);
+  };
 
   const handleParentLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,10 +192,55 @@ export default function Index() {
                   {loading ? '로그인 중...' : '로그인'}
                 </button>
               </form>
-              <button onClick={() => { setView('parent_setup'); setError(''); }}
-                className="w-full mt-3 text-center text-sm text-blue-500 dark:text-blue-400 hover:underline">
-                처음 사용하시나요? 계정 만들기 →
+              <div className="mt-3 flex flex-col gap-1.5 text-center text-sm">
+                <button onClick={() => { setView('forgot_password'); setError(''); setResetSent(false); }}
+                  className="text-gray-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 transition">
+                  비밀번호를 잊으셨나요?
+                </button>
+                <button onClick={() => { setView('parent_setup'); setError(''); }}
+                  className="text-blue-500 dark:text-blue-400 hover:underline">
+                  처음 사용하시나요? 계정 만들기 →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 비밀번호 재설정 */}
+          {view === 'forgot_password' && (
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl dark:shadow-slate-900/50 p-6 animate-fade-in border dark:border-slate-700 transition-colors duration-300">
+              <button onClick={() => { setView('parent_login'); setError(''); setResetSent(false); }}
+                className="text-gray-400 dark:text-slate-500 mb-4 hover:text-gray-600 dark:hover:text-slate-300 transition text-sm flex items-center gap-1">
+                ← 뒤로
               </button>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1">비밀번호 재설정</h2>
+              <p className="text-gray-400 dark:text-slate-500 text-sm mb-4">
+                가입한 이메일을 입력하면 재설정 링크를 보내드려요
+              </p>
+              {resetSent ? (
+                <div className="text-center py-6">
+                  <p className="text-4xl mb-3">📬</p>
+                  <p className="font-bold text-gray-800 dark:text-white mb-1">이메일을 보냈어요!</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    <span className="font-medium text-blue-500">{email}</span>으로<br />
+                    재설정 링크를 전송했습니다.<br />
+                    받은 편지함을 확인해 주세요.
+                  </p>
+                  <button onClick={() => { setView('parent_login'); setResetSent(false); }}
+                    className="mt-5 text-sm text-blue-500 dark:text-blue-400 hover:underline">
+                    로그인 화면으로 돌아가기
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-3">
+                  <input type="email" placeholder="가입한 이메일" value={email}
+                    onChange={e => setEmail(e.target.value)} className={inputCls} />
+                  {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
+                  <button type="submit" disabled={loading}
+                    className="w-full bg-blue-500 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition disabled:opacity-50">
+                    {loading ? '전송 중...' : '재설정 링크 보내기'}
+                  </button>
+                </form>
+              )}
             </div>
           )}
 
