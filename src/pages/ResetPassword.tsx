@@ -12,10 +12,16 @@ export default function ResetPassword() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Supabase가 URL 해시의 recovery 토큰을 자동으로 처리해 세션을 설정함
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true);
+    // 이미 세션이 수립됐다면(App.tsx에서 이벤트 처리 후 리다이렉트) 즉시 준비 완료
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true);
     });
+
+    // 직접 링크로 접근한 경우 이벤트 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') setReady(true);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
