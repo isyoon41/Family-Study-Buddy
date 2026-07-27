@@ -5,17 +5,26 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 import { getChildStudyLogs } from '../../lib/db';
 import type { StudyLog } from '../../types';
 
-// ── Color palettes for book spines ──────────────────────────────
-const PALETTES: [string, string][] = [
-  ['#f472b6', '#be185d'], ['#fb923c', '#c2410c'], ['#34d399', '#047857'],
-  ['#60a5fa', '#1d4ed8'], ['#a78bfa', '#6d28d9'], ['#fbbf24', '#b45309'],
-  ['#f87171', '#b91c1c'], ['#2dd4bf', '#0f766e'], ['#818cf8', '#3730a3'],
-  ['#4ade80', '#15803d'], ['#c084fc', '#7e22ce'], ['#38bdf8', '#0369a1'],
+// ── Pastel palette with paired shading tones ────────────────────
+// [highlight top, base mid, deep bottom, text color]
+const PASTEL_SPINES: [string, string, string, string][] = [
+  ['#f5dada', '#d4989a', '#a86a6c', '#4a1e20'],  // dusty rose
+  ['#d8e8f8', '#96b8d8', '#6088b0', '#1a3050'],  // powder blue
+  ['#d4eeda', '#90c4a0', '#5a9870', '#1a4228'],  // sage green
+  ['#e4d8f4', '#b898d8', '#8860b0', '#2c1848'],  // soft lavender
+  ['#f8e4cc', '#ddb888', '#b88850', '#503018'],  // warm peach
+  ['#c8eeee', '#80c0c0', '#4a9898', '#124040'],  // teal mist
+  ['#f0eacc', '#d0c080', '#a89040', '#403410'],  // warm sand
+  ['#f0d0e0', '#d090a8', '#a85878', '#481828'],  // mauve
+  ['#ccdcf0', '#88acd0', '#5078a8', '#122840'],  // steel blue
+  ['#d8f0cc', '#96c880', '#5ca040', '#1c3c10'],  // mint sage
+  ['#e0ccf0', '#b490d0', '#8458a8', '#281040'],  // lilac
+  ['#cce8f0', '#7ab8cc', '#3a8898', '#0c2c38'],  // aqua
 ];
-function spineColors(title: string): [string, string] {
+function spineColors(title: string): [string, string, string, string] {
   let h = 0;
   for (let i = 0; i < title.length; i++) h = (h * 31 + title.charCodeAt(i)) | 0;
-  return PALETTES[Math.abs(h) % PALETTES.length];
+  return PASTEL_SPINES[Math.abs(h) % PASTEL_SPINES.length];
 }
 function spineHeight(title: string): number {
   let h = 0;
@@ -122,37 +131,52 @@ function renderCanvas(
 
 // ── Book Spine component ─────────────────────────────────────────
 function BookSpine({ book, index }: { book: BookEntry; index: number }) {
-  const [c1, c2] = spineColors(book.title);
+  const [cTop, cMid, cBot, cText] = spineColors(book.title);
   const h = spineHeight(book.title);
   return (
     <div
       title={book.title}
       style={{
-        width: 46, height: h, flexShrink: 0,
-        background: `linear-gradient(180deg, ${c1} 0%, ${c2} 100%)`,
-        borderRadius: '5px 5px 0 0',
+        width: 44, height: h, flexShrink: 0,
+        background: `linear-gradient(180deg, ${cTop} 0%, ${cMid} 55%, ${cBot} 100%)`,
+        borderRadius: '4px 4px 0 0',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         position: 'relative', cursor: 'default',
-        boxShadow: '2px 0 6px rgba(0,0,0,.18), inset -2px 0 4px rgba(0,0,0,.1)',
+        // 왼쪽 하이라이트 + 오른쪽 음영 + 드롭 섀도 → 입체감
+        boxShadow: [
+          'inset 4px 0 8px rgba(255,255,255,0.55)',   // 왼쪽 빛 반사
+          'inset -3px 0 6px rgba(0,0,0,0.12)',         // 오른쪽 음영
+          '4px 0 10px rgba(0,0,0,0.18)',               // 오른쪽 드롭 섀도
+          '0 -1px 0 rgba(255,255,255,0.4)',             // 상단 엣지
+        ].join(', '),
         animation: `spine-in .45s ${index * 0.055}s cubic-bezier(.34,1.56,.64,1) both`,
         transformOrigin: 'bottom center',
       }}>
-      {/* Spine title (vertical) */}
+      {/* 왼쪽 바인딩 라인 */}
+      <div style={{
+        position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
+        background: `linear-gradient(180deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,.1) 100%)`,
+        borderRadius: '4px 0 0 0',
+      }} />
+      {/* 제목 (세로) */}
       <span style={{
         writingMode: 'vertical-rl', textOrientation: 'mixed',
-        color: 'rgba(255,255,255,.95)', fontSize: 10, fontWeight: 700,
-        lineHeight: 1.2, padding: '6px 3px',
+        color: cText, fontSize: 10, fontWeight: 700,
+        lineHeight: 1.3, padding: '8px 2px',
         overflow: 'hidden', maxHeight: h - 20,
-        textShadow: '0 1px 3px rgba(0,0,0,.4)',
         userSelect: 'none',
         fontFamily: '"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif',
+        letterSpacing: '0.02em',
       }}>
         {book.title}
       </span>
-      {/* Completed dot */}
+      {/* 완독 표시 — 상단 작은 점 */}
       {book.completed && (
-        <span style={{ position: 'absolute', top: 5, left: '50%', transform: 'translateX(-50%)',
-          fontSize: 8 }}>⭐</span>
+        <div style={{
+          position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)',
+          width: 6, height: 6, borderRadius: '50%',
+          backgroundColor: cText, opacity: 0.5,
+        }} />
       )}
     </div>
   );
@@ -173,13 +197,23 @@ function Bookshelf({ books, isVisible }: { books: BookEntry[]; isVisible: boolea
             <BookSpine key={book.title} book={book} index={i} />
           ))}
         </div>
-        {/* Wooden shelf */}
+        {/* Wooden shelf — 월넛 톤 */}
         <div style={{
-          height: 20, marginLeft: 20,
-          width: books.length * 51,
-          minWidth: 'calc(100% - 40px)',
-          background: 'linear-gradient(180deg, #c8960c 0%, #a87832 50%, #7a5520 100%)',
-          boxShadow: '0 6px 16px rgba(0,0,0,.25), inset 0 2px 4px rgba(255,255,255,.2)',
+          height: 22, marginLeft: 20,
+          width: `max(calc(100% - 40px), ${books.length * 49}px)`,
+          background: [
+            'linear-gradient(180deg,',
+            '#a07850 0%,',    // 상단 엣지 (밝은 하이라이트)
+            '#7a5430 15%,',   // 메인 표면
+            '#5c3c1c 60%,',   // 깊은 중간
+            '#3c2410 100%',   // 하단 그림자
+            ')',
+          ].join(' '),
+          boxShadow: [
+            '0 8px 24px rgba(0,0,0,.35)',
+            'inset 0 2px 5px rgba(200,160,80,.3)',  // 상단 광택
+            'inset 0 -2px 4px rgba(0,0,0,.2)',      // 하단 음영
+          ].join(', '),
         }} />
       </div>
     </div>
